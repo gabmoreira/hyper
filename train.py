@@ -25,7 +25,7 @@ if __name__ == '__main__':
            'img_path'         : './CUB_200_2011/',
            'train_dict_path'  : './CUB_200_2011/train_split.pt',
            'val_dict_path'    : './CUB_200_2011/val_split.pt',
-           'test_dict_path'   : './CUB_200_2011/val_split.pt',
+           'test_dict_path'   : './CUB_200_2011/test_split.pt',
            'seed'             : 10,
            'epochs'           : 200,
            'resume'           : False,
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                           transforms=get_cub_transforms('val'),
                           im_size=84)
 
-    val_sampler = FewshotSampler(dataset=train_samples, 
+    val_sampler = FewshotSampler(dataset=val_samples, 
                                  num_batches=cfg['batch_size']*5,
                                  way=cfg['way'],
                                  shot=cfg['shot'],
@@ -92,7 +92,11 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=cfg['lr'])
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg['step'], gamma=cfg['gamma'])
 
-    criterion = None
+    criterion = ProtoLoss(shot=cfg['shot'],
+                          way=cfg['way'],
+                          query=cfg['query'],
+                          distance_fn=hf.cdist(cfg['manifold'], cfg['metric_k']),
+                          centroid_fn=None)
     
     trainer = Trainer(model,
                       cfg['epochs'],
@@ -107,5 +111,5 @@ if __name__ == '__main__':
 
     experiment_verbose(cfg, model, device, train_loader, val_loader)
     
-    #trainer.fit() 
+    trainer.fit() 
 
