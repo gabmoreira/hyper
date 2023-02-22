@@ -3,14 +3,30 @@
     Feb 22 2023
     Gabriel Moreira
 """
+import torch
 import torch.nn as nn
-import functional as hf
+import hyperbolic.functional as hf
 
+
+class PoincareGradient(torch.autograd.Function):
+    # Placeholder
+    k = -1
+
+    @staticmethod
+    def forward(ctx, x):
+        ctx.save_for_backward(x)
+        return x
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        (x,) = ctx.saved_tensors
+
+        scale = (1 + RiemannianGradient.k * x.pow(2).sum(-1, keepdim=True)).pow(2) / 4
+        return grad_output * scale
+    
+    
 class PoincareExp0(nn.Module):
-    def __init__(self, 
-                 k: float,
-                 dim: int,
-                 riemannian: bool):
+    def __init__(self, k: float, riemannian: bool):
         super(PoincareExp0, self).__init__()
        
         self.k = k
@@ -28,33 +44,30 @@ class PoincareExp0(nn.Module):
 
 
 class LorentzExp0(nn.Module):
-    def __init__(self, 
-                 k: float,
-                 dim: int):
+    def __init__(self, k: float):
         super(LorentzExp0, self).__init__()
-
+        self.k = k
+        
     def forward(self, u):
         x = hf.lorentz_exp0(u, k=self.k)
         return x
     
 
 class LorentzInclusion(nn.Module):
-    def __init__(self, 
-                 k: float,
-                 dim: int):
+    def __init__(self, k: float):
         super(LorentzInclusion, self).__init__()
-
+        self.k = k
+        
     def forward(self, u):
         x = hf.lorentz_inclusion(u, k=self.k)
         return x
     
     
 class SphereProjection(nn.Module):
-    def __init__(self, 
-                 k: float,
-                 dim: int):
+    def __init__(self, k: float):
         super(SphereProjection, self).__init__()
-
-    def forward(self, u):
-        x = hf.sphere_projection(u, k=self.k)
+        self.k = k
+        
+    def forward(self, x):
+        x = hf.sphere_projection(x, k=self.k)
         return x
