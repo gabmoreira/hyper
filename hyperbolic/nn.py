@@ -40,7 +40,7 @@ class PoincareExp0(nn.Module):
 
     def forward(self, u):
         x = hf.poincare_exp0(u, k=self.k)
-        return self.grad_fix(hf.project2poincare(x), k=self.k)
+        return self.grad_correction(hf.project2poincare(x, k=self.k))
 
 
 class LorentzExp0(nn.Module):
