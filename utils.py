@@ -6,41 +6,43 @@
 
 import os
 import json
-
+import torch
+import numpy as np
+import pprint
 
 def save_config(exp_name, cfg):
     with open(exp_name + '/cfg.json', 'w') as fp:
         json.dump(cfg, fp)
      
     
-
 def init_experiment(cfg):
-    exp_name = cfg['dataset'] + '_' +\
-               cfg['manifold'] + cfg['manifold_dim'] + '_' \ 
-               cfg['metric'] + '_n' + cfg['n']
+    exp_name = cfg['dataset'] + '_'
+    exp_name += cfg['manifold'] + str(cfg['manifold_dim']) + '_'
+    exp_name += cfg['metric'] + '_n' + str(cfg['n'])
     
     cfg['name'] = exp_name
     
     # If experiment folder doesn't exist create it
-    if not os.path.isdir(exp_name):
-        os.makedirs(exp_name)
+    if not os.path.isdir(os.path.join('./experiments', exp_name)):
+        os.makedirs(os.path.join('./experiments', exp_name))
         print("Created experiment folder : ", exp_name)
     else:
         print(exp_name, "folder already exists.")
 
-    save_config(exp_name, cfg)
-
+    with open(os.path.join('./experiments', exp_name, 'cfg.json'), 'w') as f:
+        json.dump(cfg, f)
+        
     torch.manual_seed(cfg['seed'])
     np.random.seed(cfg['seed'])
 
 
     
-def experiment_verbose(cfg, device, train_loder, val_loader):
-    print(model)
-    verbose = 'Experiment ' + cfg['name'] + '\n' + \
-              'Running on' + str(device) + '\n' \
-              'Train - {} batches of size {}'.format(len(train_loader),
-                                                     cfg['batch_size']) + '\n' +\
-              'Val   - {} batches of size {}'.format(len(val_loader),
-                                                     cfg['batch_size'])
+def experiment_verbose(cfg, model, device, train_loader, val_loader):
+    verbose = 'Experiment: ' + cfg['name'] + '\n'
+    verbose += 'Running on ' + str(device) + '\n'
+    verbose += 'Train - {} batches of size {}'.format(len(train_loader), cfg['batch_size']) + '\n'
+    verbose +=  'Val   - {} batches of size {}'.format(len(val_loader), cfg['batch_size'])
+    print('\n')
+    pprint.pprint(cfg)
+    print('\n')
     print(verbose)
