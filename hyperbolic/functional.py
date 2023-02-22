@@ -5,6 +5,7 @@
 """
 import numpy as np
 import torch
+import torch.nn.functional as F
 from hmath import atanh, acosh
 
 
@@ -83,6 +84,12 @@ def poincare_exp0(u : torch.Tensor, k: float):
     return gamma
 
                         
+def sphere_projection(x: torch.Tensor, k: float):
+    r = 1.0 / (-k)**2
+    x = r * F.normalize(x, p=2, dim=-1)
+    return x
+                        
+                        
 def lorentz_inclusion(x: torch.Tensor, k: float):      
     """
         Hyperboloid (curvature k < 0) inclusion map
@@ -95,6 +102,7 @@ def lorentz_inclusion(x: torch.Tensor, k: float):
     xz[...,-1]  += torch.sqrt(torch.square(local_coordinates).sum(dim=-1) - 1.0/k)
     return xz
 
+                        
 
 def mobius_add(x: torch.Tensor, y: torch.Tensor, k: float):
     """
