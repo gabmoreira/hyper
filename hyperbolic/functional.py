@@ -6,7 +6,8 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from hmath import atanh, acosh
+
+from hyperbolic.hmath import atanh, acosh
 
 
 def euclidean_dist(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
@@ -66,9 +67,9 @@ def lorentz_inner(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
     """
         Inner product defined from the Lorentz pseudometric
     """
-    metric = torch.ones((x.shape[-1],)
+    metric = torch.ones((x.shape[-1],))
     metric[-1] = -1
-    inner = torch.einsum('...i,...i,i->...'x,y,metric)
+    inner = torch.einsum('...i,...i,i->...',x,y,metric)
     if keepdim:
         inner = inner.unsqueeze(-1)
     return inner
