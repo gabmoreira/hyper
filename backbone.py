@@ -43,7 +43,7 @@ def conv_block(in_dim: int, out_dim: int):
                          nn.MaxPool2d(2))
 
 
-class ConvNet(nn.Module):
+class Convnet(nn.Module):
     def __init__(self, in_dim=3, hid_dim=64, out_dim=64):
         """
         """
