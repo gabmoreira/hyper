@@ -8,7 +8,7 @@
 
 import torch
 
-class Artanh(torch.autograd.Function):
+class Atanh(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
         x = x.clamp(-1 + 1e-5, 1 - 1e-5)
@@ -22,7 +22,7 @@ class Artanh(torch.autograd.Function):
         return grad_output / (1 - input ** 2)
 
     
-class Arsinh(torch.autograd.Function):
+class Asinh(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
         ctx.save_for_backward(x)
@@ -33,15 +33,15 @@ class Arsinh(torch.autograd.Function):
         (input,) = ctx.saved_tensors
         return grad_output / (1 + input ** 2) ** 0.5
 
-def artanh(x):
+def atanh(x):
     return Artanh.apply(x)
 
 
-def arsinh(x):
+def asinh(x):
     return Arsinh.apply(x)
 
 
-def arcosh(x, eps=1e-5):  # pragma: no cover
+def acosh(x, eps=1e-5):  # pragma: no cover
     x = x.clamp(-1 + eps, 1 - eps)
     return torch.log(x + torch.sqrt(1 + x) * torch.sqrt(x - 1))
 
