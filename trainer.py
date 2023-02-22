@@ -8,7 +8,7 @@ import os
 import torch
 import numpy as np
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from tracker import Tracker
 
@@ -43,7 +43,7 @@ class Trainer:
                                 'train_acc', 
                                 'dev_loss', 
                                 'dev_acc',
-                                'lr'], name, load=resume)
+                                'lr'], os.path.join('./experiments', name), load=resume)
 
         if resume:
             self.resume_checkpoint()
@@ -60,7 +60,7 @@ class Trainer:
             dev_loss, dev_acc     = self.validate_epoch()
 
             self.epoch_verbose(epoch, train_loss, train_acc, dev_loss, dev_acc)
-            self.scheduler.step(dev_acc)
+            self.scheduler.step()
 
             # Check if better than previous models
             if epoch > 1:
@@ -128,11 +128,11 @@ class Trainer:
         total_correct  = 0
         total = 0
         
-        for i_batch, batch_dict in enumerate(self.dev_loader):
+        for i_batch, batch_dict in enumerate(tqdm(self.dev_loader)):
             batch_data   = batch_dict['data'].to(self.device)  
             batch_target = batch_dict['target'].to(self.device)
                 
-            batch_features = self.model(img)
+            batch_features = self.model(batch_data)
             loss_batch = self.criterion(batch_features, batch_target)  
 
             total_loss += loss_batch.detach()
@@ -148,19 +148,19 @@ class Trainer:
         '''
             Save model dict and hyperparams
         '''
-        state = {"epoch":     epoch,
-                 "model":     self.model,
-                 "optimizer": self.optimizer,
-                 "scheduler": self.scheduler }
+        checkpoint = {"epoch"     : epoch,
+                      "model"     : self.model.state_dict(),
+                      "optimizer" : self.optimizer,
+                      "scheduler" : self.scheduler }
 
         # Save checkpoint to resume training later
-        checkpoint_path = os.path.join(self.name, "checkpoint.pth")
-        torch.save(state, checkpoint_path)
+        checkpoint_path = os.path.join('./experiments', self.name, 'checkpoint.pt')
+        torch.save(checkpoint, checkpoint_path)
         print('Checkpoint saved: {}'.format(checkpoint_path))
 
         # Save best model weights
         if is_best:
-            best_path = os.path.join(self.name, "best_weights.pth")
+            best_path = os.path.join('./experiments/', self.name, "best_weights.pt")
             torch.save(self.model.state_dict(), best_path)
             print("Saving best model: {}".format(best_path))
 
@@ -168,15 +168,15 @@ class Trainer:
     def resume_checkpoint(self):
         '''
         '''
-        resume_path = os.path.join(self.name, "checkpoint.pth")
+        resume_path = os.path.join('./experiments/', self.name, "checkpoint.pt")
         print("Loading checkpoint: {} ...".format(resume_path))
 
         checkpoint       = torch.load(resume_path)
         self.start_epoch = checkpoint["epoch"] + 1
-        self.model       = checkpoint["model"]
         self.optimizer   = checkpoint["optimizer"]
         self.scheduler   = checkpoint["scheduler"]
-
+        self.model.load_state_dict(checkpoint["model"])
+        
         print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     
