@@ -14,32 +14,39 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as fn
+import torchvision.transforms as T
 
-from voc import Vocabulary
+from hyper.voc import Vocabulary
 
 
+def get_df_transforms(split: str):
+    t_train = T.Compose([T.RandomResizedCrop(224, scale=(0.2, 1.)),
+                         T.RandomHorizontalFlip(),
+                         T.RandomApply([T.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
+                         T.RandomGrayscale(p=0.2),
+                         T.ToTensor(),
+                         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    
+    t_val = T.Compose([T.ToTensor(), T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+
+    if split == 'train':
+        return t_train
+    elif split == 'test' or split == 'val':
+        return t_val
+    else:
+        return t_train, t_val
+
+
+    
 class DeepFashionData(Dataset):
     def __init__(self,
-                 img_path,
-                 data_dict_path,
-                 taxonomy_path,
+                 img_path: str,
+                 data_dict_path: str,
                  transforms):
  
         self.img_path   = img_path
         self.transforms = transforms
-        self.taxonomy   = None
         
-        """
-            Load taxonomy dictionary
-        """
-        if taxonomy_path is not None:
-            taxonomy = torch.load(taxonomy_path)
-            self.taxonomy = {}
-            for key in taxonomy.keys():
-                self.taxonomy[key] = torch.tensor(taxonomy[key].astype(np.float32))
-            self.taxonomy_depth = max([len(node.split('/')) for node in self.taxonomy.keys()])
-            self.taxonomy_dim   = self.taxonomy[list(self.taxonomy.keys())[0]].shape[0]
-            
         """
             Reads dictionary with all data from data_dict_path
 
@@ -55,47 +62,49 @@ class DeepFashionData(Dataset):
                 dict['bbox']     = [[50, 40, 140, 180], [10, 55, 78, 180], ...]
                 dict['pose']     = [1, 1, 2, 3, 1, ...]
         """
-        data = torch.load(data_dict_path)
-        for key, value in data.items():
-            setattr(self, key, value)
-      
-        self.voc = {'gender'    : Vocabulary(self.gender),
-                    'cat'       : Vocabulary(self.cat),
-                    'body_part' : Vocabulary(self.body_part)}
+        data_dict = torch.load(data_dict_path)
         
-        self.length = len(self.gender)
+        self.data = {}
+        for key, value in data_dict.items():
+            self.data[key] = value
+            
+        self.build_target('target', ['gender', 'cat'])
+        self.build_vocs(['target'])
         
-    
+        self.length = len(self.data['target'])
+        
+        
+    def build_vocs(self, items: list):
+        """
+            Creates a dictionary of vocabularies for the items requested
+        """
+        self.voc = {item : Vocabulary(self.data[item]) for item in items}
+
+        
+    def build_target(self, target_name: str, items: list):
+        n = len(self.data[items[0]])
+        self.data[target_name] = ['/'.join([str(self.data[t][i]) for t in items]) for i in range(n)]
+           
+            
     def collate_fn(self, batch):
         """
             Create batch tensors from argument batch (list)
         """
         batch_dict = {}
         
-        batch_dict['gender']    = torch.tensor([self.voc['gender'].w2i(b[0]) for b in batch])
-        batch_dict['body_part'] = torch.tensor([self.voc['body_part'].w2i(b[1]) for b in batch])
-        batch_dict['cat']       = torch.tensor([self.voc['cat'].w2i(b[2]) for b in batch])
-        batch_dict['img']       = torch.cat([self.transforms(b[3]).unsqueeze(0) for b in batch])
+        batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[0]) for b in batch])
+        batch_dict['img']    = torch.cat([self.transforms(b[1]).unsqueeze(0) for b in batch])
 
-        if self.taxonomy is not None:
-            batch_dict['node_embed'] = torch.cat([b[-1] for b in batch])
-            
         return batch_dict
         
         
     def __getitem__(self, i):
         """
-        """
-        node_embed = None
-        if self.taxonomy is not None:
-            node_embed = torch.zeros((1, self.taxonomy_dim, self.taxonomy_depth))      
-            node_embed[0,:,0] += self.taxonomy[self.gender[i]]
-            node_embed[0,:,1] += self.taxonomy[self.gender[i] + '/' + self.body_part[i]]
-            node_embed[0,:,2] += self.taxonomy[self.gender[i] + '/' + self.body_part[i] + '/' + self.cat[i]]
-            
+        """ 
         im = self.process_im(i)
+        target = self.data['target'][i]
         
-        return self.gender[i], self.body_part[i], self.cat[i], im, node_embed
+        return im, target
     
     
     def __len__(self):
@@ -133,10 +142,10 @@ class DeepFashionData(Dataset):
         """
             Open, crop, resize i-th image
         """
-        im = Image.open(os.path.join(self.img_path, self.path[i]))
+        im = Image.open(os.path.join(self.img_path, self.data['path'][i]))
         im = im.convert(mode='RGB')
         
-        bbox = self.bbox[i]
+        bbox = self.data['bbox'][i]
                 
         # Set minimum size for bounding box - some of them are way too small
         bbox_width  = bbox[2] - bbox[0]
