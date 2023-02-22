@@ -26,3 +26,35 @@ class PoincareExp0(nn.Module):
         x = hf.poincare_exp0(u, k=self.k)
         return self.grad_fix(hf.project2poincare(x), k=self.k)
 
+
+class LorentzExp0(nn.Module):
+    def __init__(self, 
+                 k: float,
+                 dim: int):
+        super(LorentzExp0, self).__init__()
+
+    def forward(self, u):
+        x = hf.lorentz_exp0(u, k=self.k)
+        return x
+    
+
+class LorentzInclusion(nn.Module):
+    def __init__(self, 
+                 k: float,
+                 dim: int):
+        super(LorentzInclusion, self).__init__()
+
+    def forward(self, u):
+        x = hf.lorentz_inclusion(u, k=self.k)
+        return x
+    
+    
+class SphereProjection(nn.Module):
+    def __init__(self, 
+                 k: float,
+                 dim: int):
+        super(SphereProjection, self).__init__()
+
+    def forward(self, u):
+        x = hf.sphere_projection(u, k=self.k)
+        return x
