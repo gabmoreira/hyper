@@ -6,26 +6,54 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
+from typing import Callable
 
-class HyperDistance(nn.Module):
-    def __init__(self, metric):
-        """
-        Batch-mean hyperbolic distortion 
+class ProtoLoss(nn.Module):
+    def __init__(self,
+                 shot: int,
+                 way: int,
+                 query: int,
+                 distance_fn: Callable,
+                 centroid_fn: Callable,
+                 device='cuda'):
         
-        Parameters 
-        ----------
-        metric - torch.tensor of shape n with hyperbolic metric signature
-        """
-        super(HyperDistance, self).__init__()
-        self.metric = metric
+        super(ProtoLoss, self).__init__()
+        self.shot  = shot
+        self.way   = way
+        self.query = query
+        self.distance_fn = distance_fn
+        self.centroid_fn = centroid_fn
         
-    def forward(self, batch_features, target_features):
-        inner_products = torch.diag(torch.matmul(self.metric * batch_features, target_features.transpose(1,0)))
-        distances = torch.acosh(torch.clamp(-inner_products, min=1.0))
-        loss = torch.mean(distances)
+        self.label = torch.arange(self.way).repeat(self.query).to(device)
+        
+        # Store scores to compute accuracies
+        self.t  = None
+        self.tc = None
+        
+    def forward(self, x: torch.Tensor, target):
+        p = self.shot * self.way
+        x_shot, x_query = x[:p,...], x[p:,...]
+        
+        x_shot = x_shot.reshape((self.shot, self.way, -1))
+
+        if self.shot > 1:
+            x_prototypes = self.centroid_fn(x_shot, dim=0)
+        else:
+            x_prototypes = x_shot.squeeze(0)
+        
+        logits = -self.distance_fn(x_query, x_prototypes)
+        loss = F.cross_entropy(logits, self.label)
+    
+        self.tc = (torch.argmax(logits, dim=-1) == self.label).sum()
+        self.t  = logits.shape[0]
         
         return loss
+    
+    def scores(self):
+        return self.tc, self.t 
+
 
 
     
