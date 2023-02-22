@@ -34,7 +34,7 @@ class Asinh(torch.autograd.Function):
         return grad_output / (1 + input ** 2) ** 0.5
 
 def atanh(x):
-    return Artanh.apply(x)
+    return Atanh.apply(x)
 
 
 def asinh(x):
