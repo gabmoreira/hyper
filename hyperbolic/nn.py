@@ -3,7 +3,6 @@
     Feb 22 2023
     Gabriel Moreira
 """
-
 import torch.nn as nn
 import functional as hf
 
