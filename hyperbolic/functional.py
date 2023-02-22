@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from hyperbolic.hmath import atanh, acosh
+from .hmath import atanh, acosh, tanh
 
 
 def euclidean_dist(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
@@ -36,7 +36,7 @@ def lorentz_distance(x: torch.Tensor, y: torch.Tensor, k: float, keepdim: bool =
     return dist
 
 
-def euclidean_cdist(x: torch.Tensor, y: torch.Tensor):
+def euclidean_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     """
         Euclidean pairwise distance matrix
     """
@@ -50,7 +50,7 @@ def poincare_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     """
     sqrt_k = (-k) ** 0.5
     cdist =  (2.0/sqrt_k) * atanh(sqrt_k * torch.norm(mobius_addition_batch(-x, y, k), dim=-1))
-
+    return cdist
 
 def lorentz_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     """
@@ -60,7 +60,11 @@ def lorentz_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     metric[...,-1] = -1
     inner = torch.einsum('ik,jk,k->ij',x,y,metric)
     cdist = (1.0 / np.sqrt(-k)) * acosh(k*inner)
-    return 
+    return cdist
+
+
+def cdist(manifold: str, k: float):
+    return eval('lambda x, y : ' + manifold + '_cdist(x,y,' + str(k) + ')')
 
 
 def lorentz_inner(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
