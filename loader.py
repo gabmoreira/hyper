@@ -14,7 +14,7 @@ from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as fn
 import torchvision.transforms as T
 
-from hyper.voc import Vocabulary
+from voc import Vocabulary
     
     
 def get_cub_transforms(split: str):
@@ -172,7 +172,7 @@ class CUBData(Dataset):
 
         im = im.crop(new_bbox)
         
-        if self.im_size is not None
+        if self.im_size is not None:
             im = self.no_distort_resize(im, self.im_size)    
     
         return im
