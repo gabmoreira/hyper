@@ -33,6 +33,7 @@ if __name__ == '__main__':
            'lr'               : 1e-3,
            'gamma'            : 0.8,
            'step'             : 50,
+           'riemannian'       : False,
            'way'              : 5,
            'shot'             : 1,
            'query'            : 15,
@@ -44,9 +45,7 @@ if __name__ == '__main__':
            'metric_k'         : -0.05,
            'n'                : 0}
 
-    
     init_experiment(cfg)
-
     
     train_samples = CUBData(img_path=cfg['img_path'],
                             data_dict_path=cfg['train_dict_path'],
@@ -82,16 +81,19 @@ if __name__ == '__main__':
                             num_workers=8,
                             pin_memory=True)
     
-    #model = get_model(cfg['backbone'], cfg['manifold'])
-    #model = model.to(device)
-    model = None
+    model = manifold_encoder(cfg['backbone'],
+                             cfg['manifold'],
+                             cfg['manifold_dim'],
+                             cfg['manifold_k'],
+                             cfg['riemannian'])
+    
+    model = model.to(device)
 
-    #optimizer = optim.Adam(model.parameters(), lr=cfg['lr'])
-    #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg['step'], gamma=cfg['gamma'])
-    optimizer = None
-    scheduler = None
+    optimizer = optim.Adam(model.parameters(), lr=cfg['lr'])
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg['step'], gamma=cfg['gamma'])
+
     criterion = None
-
+    
     trainer = Trainer(model,
                       cfg['epochs'],
                       optimizer,
