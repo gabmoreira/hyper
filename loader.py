@@ -27,7 +27,7 @@ def get_cub_transforms(split: str):
     t_val = T.Compose([T.Resize(84, interpolation=T.InterpolationMode.BICUBIC),
                        T.CenterCrop(84),
                        T.ToTensor(),
-                       T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]),
+                       T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
     if split == 'train':
         return t_train
@@ -107,8 +107,8 @@ class CUBData(Dataset):
         """
         batch_dict = {}
         
-        batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[0]) for b in batch])
-        batch_dict['img']    = torch.cat([self.transforms(b[1]).unsqueeze(0) for b in batch])
+        batch_dict['data']   = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
+        batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
 
         return batch_dict
         
