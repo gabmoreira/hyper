@@ -1,13 +1,11 @@
 """
-    deepfashion_loader.py
-    Sep 8 2022
+    loader.py
+    Feb 21 2023
     Gabriel Moreira
 """
 import os
 import math
 import torch
-import json
-import random
 import numpy as np
 
 from PIL import Image
