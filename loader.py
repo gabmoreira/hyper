@@ -17,8 +17,29 @@ import torchvision.transforms.functional as fn
 import torchvision.transforms as T
 
 from hyper.voc import Vocabulary
+    
+    
+def get_cub_transforms(split: str):
+    t_train = T.Compose([T.RandomResizedCrop(84),
+                         T.ColorJitter(brightness=0.4, contrast=0.4, hue=0.4),
+                         T.RandomHorizontalFlip(),
+                         T.ToTensor(),
+                         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        
+    t_val = T.Compose([T.Resize(84, interpolation=PIL.Image.BICUBIC),
+                       T.CenterCrop(84),
+                       T.ToTensor(),
+                       T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]),
 
-
+    if split == 'train':
+        return t_train
+    elif split == 'test' or split == 'val':
+        return t_val
+    else:
+        return t_train, t_val
+    
+    
+    
 def get_df_transforms(split: str):
     t_train = T.Compose([T.RandomResizedCrop(224, scale=(0.2, 1.)),
                          T.RandomHorizontalFlip(),
@@ -37,6 +58,8 @@ def get_df_transforms(split: str):
         return t_train, t_val
 
 
+
+            
     
 class DeepFashionData(Dataset):
     def __init__(self,
