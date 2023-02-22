@@ -15,11 +15,30 @@ import torchvision.transforms.functional as fn
 import torchvision.transforms as T
 
 from voc import Vocabulary
+from PIL import ImageEnhance
+
+transformtypedict = dict(Brightness=ImageEnhance.Brightness,
+                         Contrast=ImageEnhance.Contrast,
+                         Sharpness=ImageEnhance.Sharpness,
+                         Color=ImageEnhance.Color)
+
+class ImageJitter(object):
+    def __init__(self, transformdict):
+        self.transforms = [(transformtypedict[k], transformdict[k]) for k in transformdict]
+
+    def __call__(self, img):
+        out = img
+        randtensor = torch.rand(len(self.transforms))
+
+        for i, (transformer, alpha) in enumerate(self.transforms):
+            r = alpha * (randtensor[i] * 2.0 - 1.0) + 1
+            out = transformer(out).enhance(r).convert("RGB")
+        return out
     
     
 def get_cub_transforms(split: str):
     t_train = T.Compose([T.RandomResizedCrop(84),
-                         T.ColorJitter(brightness=0.4, contrast=0.4, hue=0.4),
+                         ImageJitter(dict(Brightness=0.4, Contrast=0.4, Color=0.4)),
                          T.RandomHorizontalFlip(),
                          T.ToTensor(),
                          T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
@@ -61,12 +80,12 @@ class CUBData(Dataset):
     def __init__(self,
                  img_path: str,
                  data_dict_path: str,
-                 im_size: int,
+                 im_resize: int,
                  transforms):
  
         self.img_path   = img_path
         self.transforms = transforms
-        self.im_size    = im_size
+        self.im_resize  = im_resize
         
         """
             Reads dict with all data from data_dict_path
@@ -172,8 +191,8 @@ class CUBData(Dataset):
 
         im = im.crop(new_bbox)
         
-        if self.im_size is not None:
-            im = self.no_distort_resize(im, self.im_size)    
+        if self.im_resize is not None:
+            im = self.no_distort_resize(im, self.im_resize)    
     
         return im
     
@@ -184,12 +203,12 @@ class DeepFashionData(Dataset):
     def __init__(self,
                  img_path: str,
                  data_dict_path: str,
-                 im_size: int,
+                 im_resize: int,
                  transforms):
  
         self.img_path   = img_path
         self.transforms = transforms
-        
+        self.im_resize  = im_resize
         """
             Reads dictionary with all data from data_dict_path
 
@@ -299,7 +318,9 @@ class DeepFashionData(Dataset):
                        min(bbox[2]+margin_x, im.size[0]), min(bbox[3]+margin_y, im.size[1])]
 
         im = im.crop(new_bbox)
-        im = self.no_distort_resize(im)    
+        
+        if self.im_resize is not None:
+            im = self.no_distort_resize(im)    
     
         return im
     
