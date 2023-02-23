@@ -181,8 +181,7 @@ class CUBData(Dataset):
         im = im.convert(mode='RGB')
         
         bbox = self.data['bbox'][i]
-
-        im = im.crop(new_bbox)
+        im   = im.crop(bbox)
         
         if self.im_resize is not None:
             im = self.no_distort_resize(im, self.im_resize)    
