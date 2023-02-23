@@ -5,9 +5,7 @@
 """
 
 import os
-import numpy as np
-import torch
-import torch.nn as nn
+import json
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -76,8 +74,8 @@ class Tracker:
     
 
     
-def load_tracker_data(dataset, selection=None):
-    experiments = [e for e in os.listdir('./') if os.path.isdir(e) and e.split('_')[0] == dataset.lower()]
+def load_tracker_data(dataset, experiments_dir, selection=None):
+    experiments = [e for e in os.listdir(experiments_dir) if e.split('_')[0].lower() == dataset.lower()]
     
     if selection is not None:
         experiments = [e for e in experiments if e in selection]
@@ -85,9 +83,13 @@ def load_tracker_data(dataset, selection=None):
     trackers = {}
     cfgs     = {}
     for experiment in experiments:
-        trackers[experiment] = pd.read_csv(os.path.join('./', experiment, 'tracker.csv'))
-        cfgs[experiment]     = torch.load(os.path.join('./', experiment, 'cfg.pt'))
-        
+        tracker_path = os.path.join(experiments_dir, experiment, 'tracker.csv')
+        cfg_path     = os.path.join(experiments_dir, experiment, 'cfg.json')
+        trackers[experiment] = pd.read_csv(tracker_path)
+        with open(cfg_path) as f:
+            data = json.load(f)
+            cfgs[experiment] = data
+
     print(experiments)
     return trackers, cfgs
 
