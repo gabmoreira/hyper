@@ -22,6 +22,7 @@ class ProtoLoss(nn.Module):
         super(ProtoLoss, self).__init__()
         self.shot  = shot
         self.way   = way
+        self.p     = self.shot * self.way
         self.query = query
         self.distance_fn = distance_fn
         self.centroid_fn = centroid_fn
@@ -33,8 +34,7 @@ class ProtoLoss(nn.Module):
         self.tc = None
         
     def forward(self, x: torch.Tensor, target):
-        p = self.shot * self.way
-        x_shot, x_query = x[:p,...], x[p:,...]
+        x_shot, x_query = x[:self.p,...], x[self.p:,...]
         
         x_shot = x_shot.reshape((self.shot, self.way, -1))
 
@@ -48,13 +48,9 @@ class ProtoLoss(nn.Module):
     
         self.tc = (torch.argmax(logits, dim=-1) == self.label).sum()
         self.t  = logits.shape[0]
-        
-        return loss
     
     def scores(self):
         return self.tc, self.t 
-
-
 
     
 class NNAcc:

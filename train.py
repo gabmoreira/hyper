@@ -33,7 +33,7 @@ if __name__ == '__main__':
            'batch_size'       : 100,
            'lr'               : 1e-3,
            'gamma'            : 0.8,
-           'step'             : 50,
+           'step_size'        : 40,
            'riemannian'       : False,
            'way'              : 5,
            'shot'             : 1,
@@ -91,7 +91,8 @@ if __name__ == '__main__':
     model = model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=cfg['lr'])
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg['step'], gamma=cfg['gamma'])
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg['step_size'],
+                                          gamma=cfg['gamma'])
 
     criterion = ProtoLoss(shot=cfg['shot'],
                           way=cfg['way'],

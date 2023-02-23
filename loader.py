@@ -36,7 +36,7 @@ class ImageJitter(object):
         return out
     
     
-def get_cub_transforms(split: str):
+def get_cub_transforms(split: str = None):
     t_train = T.Compose([T.RandomResizedCrop(84),
                          ImageJitter(dict(Brightness=0.4, Contrast=0.4, Color=0.4)),
                          T.RandomHorizontalFlip(),
@@ -91,7 +91,7 @@ class CUBData(Dataset):
             Reads dict with all data from data_dict_path
 
             Examples:
-                dict['path']       = ['images/159.Black_and_white_Warbler/Black_And_White_Warbler_0031_160773.jpg', ...]    
+                dict['path']       = ['images/159.Black_and_white_Warbler/Black_...jpg', ...]    
                 dict['attributes'] = [[1 0 22 3 0 4 4 0 ...], ... ]
                 dict['class']      = ['159.Black_and_white_Warbler', ... ]
                 dict['bbox']       = [[50, 40, 140, 180], [10, 55, 78, 180], ...]
@@ -106,6 +106,7 @@ class CUBData(Dataset):
         self.build_vocs(['target'])
         
         self.length = len(self.data['target'])
+        self.verbose()
         
         
     def build_vocs(self, items: list):
@@ -180,14 +181,6 @@ class CUBData(Dataset):
         im = im.convert(mode='RGB')
         
         bbox = self.data['bbox'][i]
-                
-        # Set minimum size for bounding box - some of them are way too small
-        bbox_width  = bbox[2] - bbox[0]
-        bbox_height = bbox[3] - bbox[1]
-        margin_x    = max((min_bbox_width-bbox_width) // 2, 0)
-        margin_y    = max((min_bbox_height-bbox_height) // 2, 0)
-        new_bbox    = [max(bbox[0]-margin_x,0), max(bbox[1]-margin_y,0),
-                       min(bbox[2]+margin_x, im.size[0]), min(bbox[3]+margin_y, im.size[1])]
 
         im = im.crop(new_bbox)
         
@@ -196,6 +189,16 @@ class CUBData(Dataset):
     
         return im
     
+
+    def verbose(self):
+        """
+            To make sure everything is ok
+        """
+        s = "Dataset with {} datapoints \nLabels: ".format(self.length)
+        s += '\n\n'
+        s += "Metadata available per datapoint: "
+        s += ', '.join(self.data.keys())
+        print(s)
     
             
     

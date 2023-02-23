@@ -36,6 +36,10 @@ class FewshotSampler:
         return self.num_batches
 
     def __iter__(self):
+        """
+            Batch of indices [[cls_1 ... cls_way], ... [cls_1, ... cls_way]]
+            data_shot, data_query = batch[:shot*way], batch[shot*way:]
+        """
         for i_batch in range(self.num_batches):
             batch = []
             # pick #way classes

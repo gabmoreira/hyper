@@ -20,7 +20,9 @@ def manifold_encoder(backbone: str,
                      riemannian: bool):
 
     if backbone == 'resnet50':
-        conv = nn.Sequential(Resnet50(unfrozen_layers=['layer3', 'layer4']),
+        conv = nn.Sequential(Resnet50(unfrozen_layers=['layer2', 
+                                                       'layer3',
+                                                       'layer4']),
                              nn.Linear(2048, dim))                                    
     elif backbone == 'convnet':
         conv = Convnet(out_dim=dim)
