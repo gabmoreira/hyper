@@ -26,7 +26,7 @@ if __name__ == '__main__':
            'train_dict_path'  : './CUB_200_2011/train_split.pt',
            'val_dict_path'    : './CUB_200_2011/val_split.pt',
            'test_dict_path'   : './CUB_200_2011/test_split.pt',
-           'im_resize'        : 224,
+           'im_resize'        : 400,
            'seed'             : 10,
            'epochs'           : 200,
            'resume'           : False,
@@ -44,7 +44,7 @@ if __name__ == '__main__':
            'manifold_k'       : -0.05,
            'metric'           : 'poincare',
            'metric_k'         : -0.05,
-           'n'                : 0}
+           'n'                : 2}
 
     init_experiment(cfg)
     
