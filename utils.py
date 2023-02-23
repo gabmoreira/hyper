@@ -18,7 +18,7 @@ def save_config(exp_name, cfg):
 def init_experiment(cfg):
     exp_name = cfg['dataset'] + '_'
     exp_name += cfg['manifold'] + str(cfg['manifold_dim']) + '_'
-    exp_name += cfg['metric'] + '_n' + str(cfg['n'])
+    exp_name += cfg['metric'] + '_' + cfg['shot'] + 's' + cfg['way'] + 'w_n' + str(cfg['n'])
     
     cfg['name'] = exp_name
     
