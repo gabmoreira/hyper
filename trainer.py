@@ -22,7 +22,7 @@ class Trainer:
         scheduler,
         criterion,
         train_loader,
-        dev_loader,
+        val_loader,
         device,
         name,
         resume):
@@ -33,7 +33,7 @@ class Trainer:
         self.scheduler    = scheduler
         self.criterion    = criterion
         self.train_loader = train_loader
-        self.dev_loader   = dev_loader
+        self.val_loader   = val_loader
         self.device       = device
         self.name         = name
         self.start_epoch  = 1
@@ -41,8 +41,8 @@ class Trainer:
         self.tracker = Tracker(['epoch',
                                 'train_loss',
                                 'train_acc', 
-                                'dev_loss', 
-                                'dev_acc',
+                                'val_loss', 
+                                'val_acc',
                                 'lr'], os.path.join('./experiments', name), load=resume)
 
         if resume:
@@ -57,22 +57,22 @@ class Trainer:
 
         for epoch in range(self.start_epoch, self.epochs+1):
             train_loss, train_acc = self.train_epoch(epoch)
-            dev_loss, dev_acc     = self.validate_epoch()
+            val_loss, val_acc     = self.validate_epoch()
 
-            self.epoch_verbose(epoch, train_loss, train_acc, dev_loss, dev_acc)
+            self.epoch_verbose(epoch, train_loss, train_acc, val_loss, val_acc)
             self.scheduler.step()
 
             # Check if better than previous models
             if epoch > 1:
-                is_best = self.tracker.isLarger('dev_acc', dev_acc)
+                is_best = self.tracker.isLarger('val_acc', val_acc)
             else:
                 is_best = True
 
             self.tracker.update(epoch=epoch,
                                 train_loss=train_loss,
                                 train_acc=train_acc,
-                                dev_loss=dev_loss,
-                                dev_acc=dev_acc,
+                                val_loss=val_loss,
+                                val_acc=val_acc,
                                 lr=self.optimizer.param_groups[0]['lr'])
 
             self.save_checkpoint(epoch, is_best)
@@ -128,7 +128,7 @@ class Trainer:
         total_correct  = 0
         total = 0
         
-        for i_batch, batch_dict in enumerate(tqdm(self.dev_loader)):
+        for i_batch, batch_dict in enumerate(tqdm(self.val_loader)):
             batch_data   = batch_dict['data'].to(self.device)  
             batch_target = batch_dict['target'].to(self.device)
                 
@@ -180,10 +180,10 @@ class Trainer:
         print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     
-    def epoch_verbose(self, epoch, train_loss, train_acc, dev_loss, dev_acc):
+    def epoch_verbose(self, epoch, train_loss, train_acc, val_loss, val_acc):
         log = "\nEpoch: {}/{} summary:".format(epoch, self.epochs)
         log += "\n            Train acc (%) |  {:.4f}".format(train_acc * 100)
-        log += "\n            Dev acc   (%) |  {:.4f}".format(dev_acc * 100)
+        log += "\n            Dev acc   (%) |  {:.4f}".format(val_acc * 100)
         log += "\n            Train loss    |  {:1.6e}".format(train_loss)
-        log += "\n            Dev loss      |  {:1.6e}".format(dev_loss)
+        log += "\n            Dev loss      |  {:1.6e}".format(val_loss)
         print(log)
