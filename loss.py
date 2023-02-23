@@ -48,6 +48,8 @@ class ProtoLoss(nn.Module):
     
         self.tc = (torch.argmax(logits, dim=-1) == self.label).sum()
         self.t  = logits.shape[0]
+        
+        return loss
     
     def scores(self):
         return self.tc, self.t 
