@@ -1,15 +1,18 @@
-'''
-    File name: utils.py
-    Author: Gabriel Moreira
-    Date last modified: 03/08/2022
-    Python Version: 3.7.10
-'''
+"""
+    tracker.py
+    Feb 22 2023
+    Gabriel Moreira
+"""
 
+import os
 import numpy as np
 import torch
 import torch.nn as nn
-import os
+
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 class Tracker:
     def __init__(self, metrics, filename, load=False):
@@ -69,3 +72,49 @@ class Tracker:
         '''
         '''
         return len(self.metrics_dict)
+    
+    
+
+    
+def load_tracker_data(dataset, selection=None):
+    experiments = [e for e in os.listdir('./') if os.path.isdir(e) and e.split('_')[0] == dataset.lower()]
+    
+    if selection is not None:
+        experiments = [e for e in experiments if e in selection]
+        
+    trackers = {}
+    cfgs     = {}
+    for experiment in experiments:
+        trackers[experiment] = pd.read_csv(os.path.join('./', experiment, 'tracker.csv'))
+        cfgs[experiment]     = torch.load(os.path.join('./', experiment, 'cfg.pt'))
+        
+    print(experiments)
+    return trackers, cfgs
+
+
+def plot_trackers(trackers, cfgs):
+    plt.figure(figsize=(18,13))
+    sns.set_theme()
+    plt.subplot(2,2,1)
+    for k, tracker in trackers.items():
+        sns.lineplot(data=tracker, y="val_acc", x='epoch', linewidth=0.6)    
+
+    plt.legend(labels=['{}  |  {}'.format(cfgs[k]['name'], cfgs[k]['backbone'])  for k in cfgs.keys()], fontsize=7)
+
+    plt.subplot(2,2,2)
+    for k, tracker in trackers.items():
+        sns.lineplot(data=tracker, y="train_acc", x='epoch', linewidth=0.6)    
+
+    plt.legend(labels=['{}  |  {}'.format(cfgs[k]['name'], cfgs[k]['backbone'])  for k in cfgs.keys()], fontsize=7)
+
+    plt.subplot(2,2,3)
+    for k, tracker in trackers.items():
+        sns.lineplot(data=tracker, y="val_loss", x='epoch', linewidth=0.6)    
+
+    plt.legend(labels=['{}  |  {}'.format(cfgs[k]['name'], cfgs[k]['backbone'])  for k in cfgs.keys()], fontsize=7)
+
+    plt.subplot(2,2,4)
+    for k, tracker in trackers.items():
+        sns.lineplot(data=tracker, y="train_loss", x='epoch', linewidth=0.6)    
+
+    plt.legend(labels=['{}  |  {}'.format(cfgs[k]['name'], cfgs[k]['backbone'])  for k in cfgs.keys()], fontsize=7)
