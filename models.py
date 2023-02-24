@@ -32,7 +32,7 @@ def manifold_encoder(backbone: str,
         to_manifold = hnn.PoincareExp0(k, riemannian)
     elif manifold.lower() == 'spherical':
         assert k > 0
-        to_manifold = hnn.SphereProjection(k)
+        to_manifold = hnn.SphericalProjection(k)
     elif manifold.lower() == 'euclidean':
         assert k == 0
         to_manifold = nn.Identity()
