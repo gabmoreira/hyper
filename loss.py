@@ -33,13 +33,13 @@ class ProtoLoss(nn.Module):
         self.t  = None
         self.tc = None
         
-    def forward(self, x: torch.Tensor, target):
+    def forward(self, x: torch.Tensor, target: torch.Tensor = None):
         x_shot, x_query = x[:self.p,...], x[self.p:,...]
         
         x_shot = x_shot.reshape((self.shot, self.way, -1))
 
         if self.shot > 1:
-            x_prototypes = self.centroid_fn(x_shot, dim=0)
+            x_prototypes = self.centroid_fn(x_shot)
         else:
             x_prototypes = x_shot.squeeze(0)
         
