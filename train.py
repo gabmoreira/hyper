@@ -39,9 +39,9 @@ if __name__ == '__main__':
            'shot'             : 1,
            'query'            : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'poincare',
+           'manifold'         : 'spherical',
            'manifold_dim'     : 1024,
-           'manifold_k'       : -0.05,
+           'manifold_k'       : 0.0501,
            'metric'           : 'poincare',
            'metric_k'         : -0.05,
            'n'                : 2}
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                           way=cfg['way'],
                           query=cfg['query'],
                           distance_fn=hf.cdist(cfg['manifold'], cfg['metric_k']),
-                          centroid_fn=None)
+                          centroid_fn=hf.mean(cfg['manifold'], cfg['metric_k']))
     
     trainer = Trainer(model,
                       cfg['epochs'],
