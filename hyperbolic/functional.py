@@ -84,6 +84,8 @@ def lorentz_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
 
 
 def cdist(manifold: str, k: float):
+    if manifold == 'spherical':
+        manifold = 'euclidean'
     return eval('lambda x, y : ' + manifold + '_cdist(x,y,' + str(k) + ')')
 
 
@@ -117,8 +119,8 @@ def lorentz_exp0(u : torch.Tensor, k : float):
     return x
 
         
-def sphere_projection(x: torch.Tensor, k: float):
-    r = 1.0 / (-k)**2
+def spherical_projection(x: torch.Tensor, k: float):
+    r = 1.0 / (k**0.5)
     x = r * F.normalize(x, p=2, dim=-1)
     return x
                         
@@ -258,7 +260,7 @@ def klein_mean(x, k):
         mean - Klein average: torch.Tensor with shape (*, dim)
     """
     lamb = 1.0 / torch.sqrt(1 + k * x.pow(2).sum(dim=-1, keepdim=True))
-    x_mean = torch.sum(lamb * x, dim=0, keepdim=True) / torch.sum(lamb, dim=0, keepdim=True)
+    x_mean = torch.sum(lamb * x, dim=0, keepdim=False) / torch.sum(lamb, dim=0, keepdim=False)
     return x_mean
 
 
@@ -289,3 +291,12 @@ def lorentz_mean(x : torch.Tensor, k : float):
     y_mean = poincare_mean(y, k)
     x_mean = poincare2lorentz(y_mean, k)
     return x_mean 
+
+
+def euclidean_mean(x : torch.Tensor, k : float):
+    x_mean = torch.mean(x, dim=0, keepdim=False)
+    return x_mean 
+
+
+def mean(manifold: str, k: float):
+    return eval('lambda x : ' + manifold + '_mean(x,' + str(k) + ')')
