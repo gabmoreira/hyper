@@ -63,11 +63,11 @@ class LorentzInclusion(nn.Module):
         return x
     
     
-class SphereProjection(nn.Module):
+class SphericalProjection(nn.Module):
     def __init__(self, k: float):
-        super(SphereProjection, self).__init__()
+        super(SphericalProjection, self).__init__()
         self.k = k
         
     def forward(self, x):
-        x = hf.sphere_projection(x, k=self.k)
+        x = hf.spherical_projection(x, k=self.k)
         return x
