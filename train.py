@@ -44,7 +44,7 @@ if __name__ == '__main__':
            'manifold_k'       : 0.0501,
            'metric'           : 'poincare',
            'metric_k'         : -0.05,
-           'n'                : 0}
+           'n'                : 1}
 
     init_experiment(cfg)
     
