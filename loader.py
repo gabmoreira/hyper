@@ -154,21 +154,23 @@ class CUBData(Dataset):
         """
         old_size = torch.tensor(im.size[::-1])
         d = torch.argmax(old_size)
+        
+        new_size = old_size.max()
+        
+        #scaling = new_size / old_size[d]
 
-        scaling = new_size / old_size[d]
+        #effective_size      = [0,0]
+        #effective_size[d]   = new_size
+        #effective_size[1-d] = int(math.floor(scaling * old_size[1-d]))
 
-        effective_size      = [0,0]
-        effective_size[d]   = new_size
-        effective_size[1-d] = int(math.floor(scaling * old_size[1-d]))
+        #new_im = fn.resize(im, size=effective_size, interpolation=InterpolationMode.BICUBIC)
 
-        new_im = fn.resize(im, size=effective_size, interpolation=InterpolationMode.BICUBIC)
-
-        pad          = new_size - effective_size[1-d]
+        pad          = new_size - old_size[1-d]
         padding      = [0,0,0,0]
         padding[d]   = pad // 2
-        padding[d+2] = new_size - effective_size[1-d] - padding[d]
+        padding[d+2] = new_size - old_size[1-d] - padding[d]
 
-        new_im = fn.pad(new_im, padding, fill=255) 
+        new_im = fn.pad(im, padding, fill=255) 
         
         return new_im
     
