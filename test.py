@@ -31,9 +31,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test few-shot experiment')
     
     parser.add_argument('dir', type=str, help='path to the experiment folder')
-
     parser.add_argument('shot', type=str, help='shot')
-    
     parser.add_argument('way', type=str, help='way')
         
     args = parser.parse_args()
@@ -71,8 +69,8 @@ if __name__ == "__main__":
                         pin_memory=True,
                         num_workers=8)
 
-    distance_fn=hf.cdist(cfg['manifold'], cfg['metric_k'])
-    centroid_fn=hf.mean(cfg['manifold'], cfg['metric_k'])
+    distance_fn=hf.cdist(cfg['metric'], cfg['metric_k'])
+    centroid_fn=hf.mean(cfg['metric'], cfg['metric_k'])
 
     criterion = ProtoLoss(shot=SHOT,
                           way=WAY,
