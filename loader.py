@@ -36,15 +36,15 @@ class ImageJitter(object):
         return out
     
     
-def get_cub_transforms(split: str = None):
-    t_train = T.Compose([T.RandomResizedCrop(84),
+def get_cub_transforms(split: str = None, size=84):
+    t_train = T.Compose([T.RandomResizedCrop(size),
                          ImageJitter(dict(Brightness=0.4, Contrast=0.4, Color=0.4)),
                          T.RandomHorizontalFlip(),
                          T.ToTensor(),
                          T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
         
-    t_val = T.Compose([T.Resize(84, interpolation=T.InterpolationMode.BICUBIC),
-                       T.CenterCrop(84),
+    t_val = T.Compose([T.Resize(size, interpolation=T.InterpolationMode.BICUBIC),
+                       T.CenterCrop(size),
                        T.ToTensor(),
                        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
@@ -57,15 +57,17 @@ def get_cub_transforms(split: str = None):
     
     
     
-def get_df_transforms(split: str):
-    t_train = T.Compose([T.RandomResizedCrop(224, scale=(0.2, 1.)),
+def get_df_transforms(split: str, size=224):
+    t_train = T.Compose([T.RandomResizedCrop(size, scale=(0.2, 1.)),
                          T.RandomHorizontalFlip(),
                          T.RandomApply([T.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
                          T.RandomGrayscale(p=0.2),
                          T.ToTensor(),
                          T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     
-    t_val = T.Compose([T.ToTensor(), T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    t_val = T.Compose([T.Resize(size, interpolation=T.InterpolationMode.BICUBIC),
+                       T.ToTensor(),
+                       T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
     if split == 'train':
         return t_train
@@ -80,12 +82,12 @@ class CUBData(Dataset):
     def __init__(self,
                  img_path: str,
                  data_dict_path: str,
-                 im_resize: int,
+                 im_padding: bool,
                  transforms):
  
         self.img_path   = img_path
         self.transforms = transforms
-        self.im_resize  = im_resize
+        self.im_padding = im_padding
         
         """
             Reads dict with all data from data_dict_path
@@ -146,7 +148,7 @@ class CUBData(Dataset):
         return self.length
     
     
-    def no_distort_resize(self, im, new_size):
+    def pad_im(self, im):
         """
             Resizes PIL image as square image with padding
             Keeps aspect ratio
@@ -156,14 +158,6 @@ class CUBData(Dataset):
         d = torch.argmax(old_size)
         
         new_size = old_size.max()
-        
-        #scaling = new_size / old_size[d]
-
-        #effective_size      = [0,0]
-        #effective_size[d]   = new_size
-        #effective_size[1-d] = int(math.floor(scaling * old_size[1-d]))
-
-        #new_im = fn.resize(im, size=effective_size, interpolation=InterpolationMode.BICUBIC)
 
         pad          = new_size - old_size[1-d]
         padding      = [0,0,0,0]
@@ -185,8 +179,8 @@ class CUBData(Dataset):
         bbox = self.data['bbox'][i]
         im   = im.crop(bbox)
         
-        if self.im_resize is not None:
-            im = self.no_distort_resize(im, self.im_resize)    
+        if self.im_padding:
+            im = self.pad_im(im)    
     
         return im
     
@@ -207,12 +201,12 @@ class DeepFashionData(Dataset):
     def __init__(self,
                  img_path: str,
                  data_dict_path: str,
-                 im_resize: int,
+                 im_padding: bool,
                  transforms):
  
         self.img_path   = img_path
         self.transforms = transforms
-        self.im_resize  = im_resize
+        self.im_padding = im_padding
         """
             Reads dictionary with all data from data_dict_path
 
@@ -258,8 +252,8 @@ class DeepFashionData(Dataset):
         """
         batch_dict = {}
         
-        batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[0]) for b in batch])
-        batch_dict['img']    = torch.cat([self.transforms(b[1]).unsqueeze(0) for b in batch])
+        batch_dict['data']   = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
+        batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
 
         return batch_dict
         
@@ -277,7 +271,7 @@ class DeepFashionData(Dataset):
         return self.length
     
     
-    def no_distort_resize(self, im, new_size=224):
+    def pad_im(self, im):
         """
             Resizes PIL image as square image with padding
             Keeps aspect ratio
@@ -285,21 +279,15 @@ class DeepFashionData(Dataset):
         """
         old_size = torch.tensor(im.size[::-1])
         d = torch.argmax(old_size)
+        
+        new_size = old_size.max()
 
-        scaling = new_size / old_size[d]
-
-        effective_size      = [0,0]
-        effective_size[d]   = new_size
-        effective_size[1-d] = int(math.floor(scaling * old_size[1-d]))
-
-        new_im = fn.resize(im, size=effective_size, interpolation=InterpolationMode.BICUBIC)
-
-        pad          = new_size - effective_size[1-d]
+        pad          = new_size - old_size[1-d]
         padding      = [0,0,0,0]
         padding[d]   = pad // 2
-        padding[d+2] = new_size - effective_size[1-d] - padding[d]
+        padding[d+2] = new_size - old_size[1-d] - padding[d]
 
-        new_im = fn.pad(new_im, padding, fill=255) 
+        new_im = fn.pad(im, padding, fill=255) 
         
         return new_im
     
@@ -312,19 +300,10 @@ class DeepFashionData(Dataset):
         im = im.convert(mode='RGB')
         
         bbox = self.data['bbox'][i]
-                
-        # Set minimum size for bounding box - some of them are way too small
-        bbox_width  = bbox[2] - bbox[0]
-        bbox_height = bbox[3] - bbox[1]
-        margin_x    = max((min_bbox_width-bbox_width) // 2, 0)
-        margin_y    = max((min_bbox_height-bbox_height) // 2, 0)
-        new_bbox    = [max(bbox[0]-margin_x,0), max(bbox[1]-margin_y,0),
-                       min(bbox[2]+margin_x, im.size[0]), min(bbox[3]+margin_y, im.size[1])]
-
-        im = im.crop(new_bbox)
+        im   = im.crop(bbox)
         
-        if self.im_resize is not None:
-            im = self.no_distort_resize(im)    
+        if self.im_padding:
+            im = self.pad_im(im)    
     
         return im
     
