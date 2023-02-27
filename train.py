@@ -26,7 +26,7 @@ if __name__ == '__main__':
            'train_dict_path'  : './CUB_200_2011/train_split.pt',
            'val_dict_path'    : './CUB_200_2011/val_split.pt',
            'test_dict_path'   : './CUB_200_2011/test_split.pt',
-           'im_resize'        : 400,
+           'im_padding'       : True,
            'seed'             : 10,
            'epochs'           : 200,
            'resume'           : False,
@@ -39,19 +39,19 @@ if __name__ == '__main__':
            'shot'             : 1,
            'query'            : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'spherical',
+           'manifold'         : 'poincare',
            'manifold_dim'     : 1024,
-           'manifold_k'       : 0.0501,
+           'manifold_k'       : -0.05,
            'metric'           : 'poincare',
            'metric_k'         : -0.05,
-           'n'                : 1}
+           'n'                : 0}
 
     init_experiment(cfg)
     
     train_samples = CUBData(img_path=cfg['img_path'],
                             data_dict_path=cfg['train_dict_path'],
                             transforms=get_cub_transforms('train'),
-                            im_resize=cfg['im_resize'])
+                            im_padding=cfg['im_padding'])
 
     train_sampler = FewshotSampler(dataset=train_samples, 
                                    num_batches=cfg['batch_size'],
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     val_samples = CUBData(img_path=cfg['img_path'],
                           data_dict_path=cfg['val_dict_path'],
                           transforms=get_cub_transforms('val'),
-                          im_resize=cfg['im_resize'])
+                          im_padding=cfg['im_padding'])
 
     val_sampler = FewshotSampler(dataset=val_samples, 
                                  num_batches=cfg['batch_size']*5,
