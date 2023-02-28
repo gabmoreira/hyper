@@ -1,13 +1,13 @@
 """
     hyperbolic/functional.py
-    Feb 22 2023
+    Feb 28 2023
     Gabriel Moreira
 """
 import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .hmath import atanh, acosh, tanh
+from .hmath import atanh, acosh, tanh, cosh, sinh
 
 
 """
@@ -20,7 +20,7 @@ def lorentz_inner(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
     """
         Inner product defined from the Lorentz pseudometric
     """
-    metric = torch.ones((x.shape[-1],))
+    metric = torch.ones((x.shape[-1],), device=x.device)
     metric[-1] = -1
     inner = torch.einsum('ik,jk,k->ij',x,y,metric)
     if keepdim:
@@ -76,16 +76,24 @@ def lorentz_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     """
         Lorentz pairwise distance matrix
     """ 
-    metric = torch.ones((x.shape[-1]))
-    metric[...,-1] = -1
-    inner = torch.einsum('ik,jk,k->ij',x,y,metric)
-    cdist = (1.0 / np.sqrt(-k)) * acosh(k*inner)
+    m = torch.ones(x.shape[-1], device=x.device)
+    m[-1] = -1
+    inner_products = torch.einsum('ik,k,jk->ij', x, m, y)
+    cdist = ((-1.0/k)**0.5) * acosh(k * inner_products)
     return cdist
 
 
+def spherical_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
+    """
+        Spherical pairwise distance matrix
+    """ 
+    r = 1/np.sqrt(k)
+    inner = torch.clamp(F.normalize(x, dim=-1, p=2) @ F.normalize(x, dim=-1, p=2).permute(1,0), min=-1.0, max=1.0)
+    cdist = r * torch.acos(inner)
+    return cdist
+    
+
 def cdist(manifold: str, k: float):
-    if manifold == 'spherical':
-        manifold = 'euclidean'
     return eval('lambda x, y : ' + manifold + '_cdist(x,y,' + str(k) + ')')
 
 
@@ -95,8 +103,25 @@ def cdist(manifold: str, k: float):
     EXPONENTIAL MAPS, INCLUSIONS & PROJECTIONS
     ------------------------------------------
 """
+def lorentz2poincare(x : torch.Tensor, k: float):
+    """
+    """
+    y = x[...,:-1] / (1.0 + np.sqrt(-k)*x[...,-1].unsqueeze(-1))
+    return y
 
-def poincare_exp0(u : torch.Tensor, k: float):
+
+def poincare2lorentz(x : torch.Tensor, k: float):
+    """
+    """
+    new_size     = list(x.shape)
+    new_size[-1] = new_size[-1] + 1
+    y = torch.zeros(new_size)
+    y[...,:-1] += 2.0 * x / (1-np.sqrt(-k)*torch.norm(x,p=2,dim=-1,keepdim=True)**2)
+    y[...,-1]  += (torch.norm(x,p=2,dim=-1)**2 + 1.0/np.sqrt(-k))/(1-np.sqrt(-k)*torch.norm(x,p=2,dim=-1)**2)
+    return y
+
+
+def poincare_exp0(u : torch.Tensor, k : float):
     """
         Poincaré (curvature k < 0) exponential map @ 0
     """
@@ -113,13 +138,15 @@ def lorentz_exp0(u : torch.Tensor, k : float):
     norm_u = torch.norm(u, p=2, dim=-1, keepdim=True)
     csh = cosh(norm_u * ((-k)**0.5))
     snh = sinh(norm_u * ((-k)**0.5))
-    w = (1.0/((-k)**0.5)) * snh * u / (norm_u + 1e-8)
+    x = (1.0/((-k)**0.5)) * snh * u / (norm_u + 1e-8)
     z = (1.0/((-k)**0.5)) * csh
-    x = torch.cat((w, z), dim=-1)
-    return x
+    p = torch.cat((x, z), dim=-1)
+    return p
 
         
 def spherical_projection(x: torch.Tensor, k: float):
+    """
+    """
     r = 1.0 / (k**0.5)
     x = r * F.normalize(x, p=2, dim=-1)
     return x
@@ -129,11 +156,9 @@ def lorentz_inclusion(x: torch.Tensor, k: float):
     """
         Hyperboloid (curvature k < 0) inclusion map
     """
-    new_size     = list(x.shape)
-    new_size[-1] = new_size[-1] + 1
-    xz = torch.zeros(new_size)
-    xz[...,:-1] += x
-    xz[...,-1]  += torch.sqrt(torch.square(local_coordinates).sum(dim=-1) - 1.0/k)
+    norm_x = torch.norm(x, p=2, dim=-1, keepdim=True)
+    z  = torch.sqrt(torch.clamp(norm_x**2 - (1.0/k), min=0.0))
+    xz = torch.cat((x,z), 1)
     return xz
 
 
