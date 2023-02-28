@@ -41,10 +41,18 @@ def asinh(x):
     return Arsinh.apply(x)
 
 
-def acosh(x, eps=1e-5):  # pragma: no cover
-    x = x.clamp(-1 + eps, 1 - eps)
+def acosh(x, clamp=1e-5):
+    x = x.clamp(min=1.0+clamp)
     return torch.log(x + torch.sqrt(1 + x) * torch.sqrt(x - 1))
 
 
 def tanh(x, clamp=15):
     return x.clamp(-clamp, clamp).tanh()
+
+
+def cosh(x, clamp=15):
+    return x.clamp(-clamp, clamp).cosh()
+
+
+def sinh(x, clamp=15):
+    return x.clamp(-clamp, clamp).sinh()
