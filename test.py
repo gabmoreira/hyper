@@ -55,7 +55,7 @@ if __name__ == "__main__":
     samples = CUBData(img_path=cfg['img_path'],
                       data_dict_path=cfg['test_dict_path'],
                       transforms=get_cub_transforms(split='test'),
-                      im_resize=cfg['im_resize'])
+                      im_padding=cfg['im_padding'])
 
     sampler = FewshotSampler(dataset=samples, 
                              num_batches=10000,
