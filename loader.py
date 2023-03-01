@@ -189,7 +189,7 @@ class CUBData(Dataset):
         """
             To make sure everything is ok
         """
-        s = "Dataset with {} datapoints \nLabels: ".format(self.length)
+        s = "Dataset with {} datapoints.".format(self.length)
         s += '\n\n'
         s += "Metadata available per datapoint: "
         s += ', '.join(self.data.keys())
