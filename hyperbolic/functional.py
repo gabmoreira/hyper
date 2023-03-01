@@ -36,6 +36,14 @@ def euclidean_dist(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
     return dist
 
 
+def squared_euclidean_dist(x: torch.Tensor, y: torch.Tensor, keepdim: bool = False):
+    """
+        Squared euclidean distance
+    """
+    dist = torch.norm(x - y, p=2, dim=-1, keepdim=keepdim)**2
+    return dist
+
+
 def poincare_dist(x: torch.Tensor, y: torch.Tensor, k: float, keepdim: bool = False):
     """
         Poincaré (curvature k < 0) distance
@@ -61,6 +69,13 @@ def euclidean_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     cdist = torch.cdist(x, y, p=2)
     return cdist
 
+
+def squared_euclidean_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
+    """
+        Squared Euclidean pairwise distance matrix
+    """
+    cdist = torch.cdist(x, y, p=2)**2
+    return cdist
 
 def poincare_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     """
