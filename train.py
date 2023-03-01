@@ -36,13 +36,13 @@ if __name__ == '__main__':
            'step_size'        : 40,
            'riemannian'       : False,
            'way'              : 5,
-           'shot'             : 1,
+           'shot'             : 5,
            'query'            : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'lorentz',
+           'manifold'         : 'poincare',
            'manifold_dim'     : 1024,
            'manifold_k'       : -0.05,
-           'metric'           : 'lorentz',
+           'metric'           : 'poincare',
            'metric_k'         : -0.05,
            'n'                : 0}
 
