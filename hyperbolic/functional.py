@@ -121,18 +121,19 @@ def cdist(manifold: str, k: float):
 def lorentz2poincare(x : torch.Tensor, k: float):
     """
     """
-    y = x[...,:-1] / (1.0 + np.sqrt(-k)*x[...,-1].unsqueeze(-1))
+    sk = np.sqrt(-k)
+    y  = x[...,:-1] / (1.0 + sk * x[...,-1].unsqueeze(-1))
+    y  = project2poincare(y, k)
     return y
 
 
 def poincare2lorentz(x : torch.Tensor, k: float):
     """
     """
-    new_size     = list(x.shape)
-    new_size[-1] = new_size[-1] + 1
-    y = torch.zeros(new_size)
-    y[...,:-1] += 2.0 * x / (1-np.sqrt(-k)*torch.norm(x,p=2,dim=-1,keepdim=True)**2)
-    y[...,-1]  += (torch.norm(x,p=2,dim=-1)**2 + 1.0/np.sqrt(-k))/(1-np.sqrt(-k)*torch.norm(x,p=2,dim=-1)**2)
+    sk  = np.sqrt(-k)
+    lbd = 2 / (1 + k * x.pow(2).sum(dim=-1, keepdim=True)).clamp_min(1e-15)
+    z   = 1.0 / sk * (lbd - 1.0)
+    y   = torch.cat((lbd * x, z), dim=-1)
     return y
 
 
