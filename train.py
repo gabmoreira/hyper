@@ -48,10 +48,10 @@ if __name__ == '__main__':
 
     init_experiment(cfg)
     
-    train_samples = CUBData(img_path=cfg['img_path'],
-                            data_dict_path=cfg['train_dict_path'],
-                            transforms=get_cub_transforms('train'),
-                            im_padding=cfg['im_padding'])
+    train_samples = ImSamples(img_path=cfg['img_path'],
+                              data_dict_path=cfg['train_dict_path'],
+                              transforms=get_cub_transforms('train'),
+                              im_padding=cfg['im_padding'])
 
     train_sampler = FewshotSampler(dataset=train_samples, 
                                    num_batches=cfg['batch_size'],
@@ -65,10 +65,10 @@ if __name__ == '__main__':
                               num_workers=8,
                               pin_memory=True)
 
-    val_samples = CUBData(img_path=cfg['img_path'],
-                          data_dict_path=cfg['val_dict_path'],
-                          transforms=get_cub_transforms('val'),
-                          im_padding=cfg['im_padding'])
+    val_samples = ImSamples(img_path=cfg['img_path'],
+                            data_dict_path=cfg['val_dict_path'],
+                            transforms=get_cub_transforms('val'),
+                            im_padding=cfg['im_padding'])
 
     val_sampler = FewshotSampler(dataset=val_samples, 
                                  num_batches=cfg['batch_size']*5,
