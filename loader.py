@@ -17,11 +17,16 @@ import torchvision.transforms as T
 from voc import Vocabulary
 from PIL import ImageEnhance
 
+from tqdm.auto import tqdm
+
+from typing import List
+
 transformtypedict = dict(Brightness=ImageEnhance.Brightness,
                          Contrast=ImageEnhance.Contrast,
                          Sharpness=ImageEnhance.Sharpness,
                          Color=ImageEnhance.Color)
 
+    
 class ImageJitter(object):
     def __init__(self, transformdict):
         self.transforms = [(transformtypedict[k], transformdict[k]) for k in transformdict]
@@ -78,17 +83,21 @@ def get_df_transforms(split: str, size=224):
 
 
 
+    
+    
 class ImSamples(Dataset):
     def __init__(self,
                  img_path: str,
                  data_dict_path: str,
                  im_padding: bool,
-                 target: list[str],
+                 target: List[str],
+                 preload: bool,
                  transforms):
  
         self.img_path   = img_path
         self.transforms = transforms
         self.im_padding = im_padding
+        self.preload    = preload
         
         """
             Reads dict with all data from data_dict_path
@@ -109,6 +118,10 @@ class ImSamples(Dataset):
         self.build_vocs(['target'])
         
         self.length = len(self.data['target'])
+        
+        if self.preload:
+            self.load()
+            
         self.verbose()
         
         
@@ -129,20 +142,28 @@ class ImSamples(Dataset):
             Create batch tensors from argument batch (list)
         """
         batch_dict = {}
-        
         batch_dict['data']   = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
         batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
-
+        
         return batch_dict
         
-        
-    def __getitem__(self, i):
+    def load(self):
         """
-        """ 
-        im = self.process_im(i)
-        target = self.data['target'][i]
+            Load all the dataset into memory beforehand
+        """
+        print('Option preloading is True. Loading images to memory')
+        self.data['im'] = []
         
-        return im, target
+        for i in tqdm(range(self.length)):
+            im = self.process_im(i)
+            self.data['im'].append(im)
+            
+            
+    def __getitem__(self, i):
+        if self.preload:
+            return self.data['im'][i], self.data['target'][i]
+        else:
+            return self.process_im(i), self.data['target'][i]
     
     
     def __len__(self):
@@ -151,7 +172,7 @@ class ImSamples(Dataset):
     
     def pad_im(self, im):
         """
-            Resizes PIL image as square image with padding
+            Pads image to make it square
             Keeps aspect ratio
             Returns a PIL image
         """
@@ -172,13 +193,14 @@ class ImSamples(Dataset):
     
     def process_im(self, i, min_bbox_width=100, min_bbox_height=100):
         """
-            Open, crop, resize i-th image
+            Open, crop (if bbox available), pad the i-th image
         """
         im = Image.open(os.path.join(self.img_path, self.data['path'][i]))
         im = im.convert(mode='RGB')
         
-        bbox = self.data['bbox'][i]
-        im   = im.crop(bbox)
+        if 'bbox' in self.data.keys():
+            bbox = self.data['bbox'][i]
+            im   = im.crop(bbox)
         
         if self.im_padding:
             im = self.pad_im(im)    
@@ -187,11 +209,8 @@ class ImSamples(Dataset):
     
 
     def verbose(self):
-        """
-            To make sure everything is ok
-        """
         s = "Dataset with {} datapoints.".format(self.length)
-        s += '\n\n'
         s += "Metadata available per datapoint: "
         s += ', '.join(self.data.keys())
+        s += '\n'
         print(s)
