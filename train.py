@@ -39,10 +39,10 @@ if __name__ == '__main__':
            'shot'             : 5,
            'query'            : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'poincare',
+           'manifold'         : 'lorentz',
            'manifold_dim'     : 1024,
            'manifold_k'       : -0.05,
-           'metric'           : 'poincare',
+           'metric'           : 'lorentz',
            'metric_k'         : -0.05,
            'n'                : 0}
 
