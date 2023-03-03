@@ -16,10 +16,10 @@ def save_config(exp_name, cfg):
      
     
 def init_experiment(cfg):
+    # Generate name of the experiment
     exp_name = cfg['dataset'] + '_'
     exp_name += cfg['manifold'] + str(cfg['manifold_dim']) + '_'
-    exp_name += cfg['metric'] + '_' + str(cfg['shot']) + 's' + str(cfg['way']) + 'w_n' + str(cfg['n'])
-    
+    exp_name += cfg['metric'] + '_' + str(cfg['train_shot']) + 's' + str(cfg['train_way']) + 'w_n' + str(cfg['n'])
     cfg['name'] = exp_name
     
     # If experiment folder doesn't exist create it
