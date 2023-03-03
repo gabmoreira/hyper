@@ -1,6 +1,6 @@
 """
     test.py
-    Feb 23 2023
+    Mar 3 2023
     Gabriel Moreira
 """
 
@@ -24,21 +24,22 @@ from loss import *
 from sampler import *
 import hyperbolic.functional as hf
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:1" if torch.cuda.is_available() else "cpu"
 torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test few-shot experiment')
     
-    parser.add_argument('dir', type=str, help='path to the experiment folder')
-    parser.add_argument('shot', type=str, help='shot')
-    parser.add_argument('way', type=str, help='way')
-        
-    args = parser.parse_args()
+    parser.add_argument('dir',   type=str, help='path to the experiment folder')
+    parser.add_argument('shot',  type=str, help='shot')
+    parser.add_argument('way',   type=str, help='way')
+    parser.add_argument('query', type=str, help='query')
     
-    DIR  = args.dir
-    SHOT = int(args.shot)
-    WAY  = int(args.way)
+    args  = parser.parse_args()
+    DIR   = str(args.dir)
+    SHOT  = int(args.shot)
+    WAY   = int(args.way)
+    QUERY = int(args.query)
     
     with open(os.path.join(DIR, 'cfg.json')) as f:
         cfg = json.load(f)
@@ -49,34 +50,36 @@ if __name__ == "__main__":
                              cfg['manifold_k'],
                              cfg['riemannian']).to(device)
 
-    model.load_state_dict(torch.load(os.path.join(DIR, 'best_weights.pt'), map_location=device))
+    model.load_state_dict(torch.load(os.path.join(DIR, 'best_weights.pt'),
+                                     map_location=device))
     model.eval()
 
-    samples = CUBData(img_path=cfg['img_path'],
-                      data_dict_path=cfg['test_dict_path'],
-                      transforms=get_cub_transforms(split='test'),
-                      im_padding=cfg['im_padding'])
+    samples = ImSamples(img_path=cfg['img_path'],
+                        data_dict_path=cfg['test_dict_path'],
+                        transforms=get_cub_transforms(split='test'),
+                        im_padding=cfg['im_padding'],
+                        target=['class'],
+                        preload=True)
 
     sampler = FewshotSampler(dataset=samples, 
                              num_batches=10000,
                              way=WAY,
                              shot=SHOT,
-                             query=cfg['query'])
+                             query=QUERY)
 
     loader = DataLoader(samples,
                         batch_sampler=sampler,
-                        collate_fn=samples.collate_fn,
-                        pin_memory=True,
-                        num_workers=8)
+                        collate_fn=samples.collate_fn)
 
     distance_fn=hf.cdist(cfg['metric'], cfg['metric_k'])
     centroid_fn=hf.mean(cfg['metric'], cfg['metric_k'])
 
     criterion = ProtoLoss(shot=SHOT,
                           way=WAY,
-                          query=cfg['query'],
+                          query=QUERY,
                           distance_fn=distance_fn,
-                          centroid_fn=centroid_fn)
+                          centroid_fn=centroid_fn,
+                          device=device)
 
     # Run test
     test_acc_record = np.zeros((10000,))
