@@ -1,6 +1,6 @@
 """
     train.py
-    Mar 2 2023
+    Mar 3 2023
     Gabriel Moreira
 """
 
@@ -44,11 +44,11 @@ if __name__ == '__main__':
            'val_shot'         : 1,
            'val_query'        : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'euclidean',
+           'manifold'         : 'lorentz',
            'manifold_dim'     : 1024,
-           'manifold_k'       : 0,
-           'metric'           : 'euclidean',
-           'metric_k'         : 0,
+           'manifold_k'       : -0.01,
+           'metric'           : 'lorentz',
+           'metric_k'         : -0.01,
            'n'                : 0}
 
     init_experiment(cfg)
