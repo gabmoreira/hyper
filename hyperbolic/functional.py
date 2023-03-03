@@ -77,6 +77,7 @@ def squared_euclidean_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     cdist = torch.cdist(x, y, p=2)**2
     return cdist
 
+
 def poincare_cdist(x: torch.Tensor, y: torch.Tensor, k: float):
     """
         Poincaré pairwise distance matrix
