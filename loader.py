@@ -1,6 +1,6 @@
 """
     loader.py
-    Feb 21 2023
+    Mar 2 2023
     Gabriel Moreira
 """
 import os
@@ -147,11 +147,12 @@ class ImSamples(Dataset):
         
         return batch_dict
         
+        
     def load(self):
         """
             Load all the dataset into memory beforehand
         """
-        print('Option preloading is True. Loading images to memory')
+        print('preloading option is True. Loading images to memory:')
         self.data['im'] = []
         
         for i in tqdm(range(self.length)):
@@ -209,8 +210,8 @@ class ImSamples(Dataset):
     
 
     def verbose(self):
-        s = "Dataset with {} datapoints.".format(self.length)
-        s += "Metadata available per datapoint: "
+        s = "Dataset with {} items.\n".format(self.length)
+        s += "Metadata available per item: "
         s += ', '.join(self.data.keys())
         s += '\n'
         print(s)
