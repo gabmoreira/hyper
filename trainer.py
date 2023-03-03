@@ -20,23 +20,25 @@ class Trainer:
         epochs,
         optimizer,
         scheduler,
-        criterion,
+        train_criterion,
+        val_criterion,
         train_loader,
         val_loader,
         device,
         name,
         resume):
 
-        self.model        = model
-        self.epochs       = epochs
-        self.optimizer    = optimizer
-        self.scheduler    = scheduler
-        self.criterion    = criterion
-        self.train_loader = train_loader
-        self.val_loader   = val_loader
-        self.device       = device
-        self.name         = name
-        self.start_epoch  = 1
+        self.model           = model
+        self.epochs          = epochs
+        self.optimizer       = optimizer
+        self.scheduler       = scheduler
+        self.train_criterion = train_criterion
+        self.val_criterion   = val_criterion
+        self.train_loader    = train_loader
+        self.val_loader      = val_loader
+        self.device          = device
+        self.name            = name
+        self.start_epoch     = 1
 
         self.tracker = Tracker(['epoch',
                                 'train_loss',
@@ -57,11 +59,11 @@ class Trainer:
 
         for epoch in range(self.start_epoch, self.epochs+1):
             train_loss, train_acc = self.train_epoch(epoch)
-            val_loss, val_acc     = self.validate_epoch()
-
-            self.epoch_verbose(epoch, train_loss, train_acc, val_loss, val_acc)
-            self.scheduler.step()
-
+            
+            if epoch == 1 or epoch % 5 == 0:
+                val_loss, val_acc = self.validate_epoch()
+                self.epoch_verbose(epoch, train_loss, train_acc, val_loss, val_acc)
+                
             # Check if better than previous models
             if epoch > 1:
                 is_best = self.tracker.isLarger('val_acc', val_acc)
@@ -75,6 +77,7 @@ class Trainer:
                                 val_acc=val_acc,
                                 lr=self.optimizer.param_groups[0]['lr'])
 
+            self.scheduler.step()
             self.save_checkpoint(epoch, is_best)
 
 
@@ -99,7 +102,7 @@ class Trainer:
             self.optimizer.zero_grad()
         
             batch_features = self.model(batch_data)
-            loss_batch     = self.criterion(batch_features, batch_target)  
+            loss_batch     = self.train_criterion(batch_features, batch_target)  
             
             loss_batch.backward()
             self.optimizer.step()
@@ -107,7 +110,7 @@ class Trainer:
             total_loss_epoch += loss_batch.detach()
             avg_loss_epoch    = float(total_loss_epoch / (i_batch + 1))
             
-            tc, t = self.criterion.scores()
+            tc, t = self.train_criterion.scores()
             total_correct += tc
             total += t
                 
@@ -133,11 +136,11 @@ class Trainer:
             batch_target = batch_dict['target'].to(self.device)
                 
             batch_features = self.model(batch_data)
-            loss_batch = self.criterion(batch_features, batch_target)  
+            loss_batch = self.val_criterion(batch_features, batch_target)  
 
             total_loss += loss_batch.detach()
             
-            tc, t = self.criterion.scores()
+            tc, t = self.val_criterion.scores()
             total_correct += tc
             total += t
                 
