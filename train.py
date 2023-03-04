@@ -44,12 +44,12 @@ if __name__ == '__main__':
            'val_shot'         : 1,
            'val_query'        : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'lorentz',
+           'manifold'         : 'spherical',
            'manifold_dim'     : 1024,
-           'manifold_k'       : -0.01,
-           'metric'           : 'lorentz',
-           'metric_k'         : -0.01,
-           'n'                : 0}
+           'manifold_k'       : 0.001,
+           'metric'           : 'euclidean',
+           'metric_k'         : 0.0,
+           'n'                : 1}
 
     init_experiment(cfg)
     
