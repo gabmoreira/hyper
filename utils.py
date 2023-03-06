@@ -1,21 +1,22 @@
 """
     utils.py
-    Feb 21 2023
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import os
 import json
 import torch
 import numpy as np
 import pprint
 
-def save_config(exp_name, cfg):
+def save_config(exp_name: str, cfg: dict):
+    """
+    """
     with open(exp_name + '/cfg.json', 'w') as fp:
         json.dump(cfg, fp)
      
     
-def init_experiment(cfg):
+def init_experiment(cfg: dict):
     # Generate name of the experiment
     exp_name = cfg['dataset'] + '_'
     exp_name += cfg['manifold'] + str(cfg['manifold_dim']) + '_'
@@ -37,7 +38,11 @@ def init_experiment(cfg):
 
 
     
-def experiment_verbose(cfg, model, device, train_loader, val_loader):
+def experiment_verbose(cfg: dict,
+                       model,
+                       device: str,
+                       train_loader,
+                       val_loader):
     verbose = 'Experiment: ' + cfg['name'] + '\n'
     verbose += 'Running on ' + str(device) + '\n'
     verbose += 'Train - {} batches of size {}'.format(len(train_loader), cfg['batch_size']) + '\n'
