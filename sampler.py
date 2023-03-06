@@ -1,9 +1,8 @@
 """
     sampler.py
-    Feb 22 2023
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import torch
 import numpy as np
 
