@@ -138,13 +138,19 @@ def poincare2lorentz(x : torch.Tensor, k: float):
     return y
 
 
-def poincare_exp0(u : torch.Tensor, k : float):
+def poincare_exp0(uu : torch.Tensor, k : float):
     """
         Poincaré (curvature k < 0) exponential map @ 0
+
+    norm = torch.clamp_min(u.norm(dim=-1, keepdim=True, p=2), 1e-5)
+    maxnorm = 5.80
+    cond = norm > maxnorm
+    projected = u / norm * maxnorm
+    uu = torch.where(cond, projected, u)
     """
     sqrt_k = (-k) ** 0.5
-    u_norm = torch.clamp_min(u.norm(dim=-1, p=2, keepdim=True), 1e-5)
-    gamma  = tanh(sqrt_k * u_norm) * u / (sqrt_k * u_norm)
+    u_norm = torch.clamp_min(uu.norm(dim=-1, p=2, keepdim=True), 1e-5)
+    gamma  = tanh(sqrt_k * u_norm) * uu / (sqrt_k * u_norm)
     return gamma
 
 
