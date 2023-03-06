@@ -1,9 +1,8 @@
 """
     tracker.py
-    Feb 22 2023
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import os
 import json
 
@@ -11,9 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from typing import List
 
 class Tracker:
-    def __init__(self, metrics, filename, load=False):
+    def __init__(self, metrics: List[str], filename: str, load=False):
         '''
         '''
         self.filename = os.path.join(filename, 'tracker.csv')
@@ -36,14 +36,14 @@ class Tracker:
         self.save()
 
 
-    def isLarger(self, metric, value):
+    def isLarger(self, metric: str, value: float):
         '''
         '''
         assert(metric in self.metrics_dict.keys())
         return sorted(self.metrics_dict[metric])[-1] < value
 
 
-    def isSmaller(self, metric, value):
+    def isSmaller(self, metric: str, value: float):
         '''
         '''
         assert(metric in self.metrics_dict.keys())
@@ -75,6 +75,8 @@ class Tracker:
 
     
 def load_tracker_data(dataset, experiments_dir, selection=None):
+    """
+    """
     experiments = [e for e in os.listdir(experiments_dir) if e.split('_')[0].lower() == dataset.lower()]
     
     if selection is not None:
@@ -95,6 +97,8 @@ def load_tracker_data(dataset, experiments_dir, selection=None):
 
 
 def plot_trackers(trackers, cfgs):
+    """
+    """
     plt.figure(figsize=(18,13))
     sns.set_theme()
     plt.subplot(2,2,1)
