@@ -21,7 +21,7 @@ class PoincareGradient(torch.autograd.Function):
     def backward(ctx, grad_output):
         (x,) = ctx.saved_tensors
 
-        scale = (1 + RiemannianGradient.k * x.pow(2).sum(-1, keepdim=True)).pow(2) / 4
+        scale = (1 + PoincareGradient.k * x.pow(2).sum(-1, keepdim=True)).pow(2) / 4
         return grad_output * scale
     
     
