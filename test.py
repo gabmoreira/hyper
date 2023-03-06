@@ -1,9 +1,8 @@
 """
     test.py
-    Mar 3 2023
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import sys
 sys.path.append('./hyper')
 
@@ -69,7 +68,9 @@ if __name__ == "__main__":
 
     loader = DataLoader(samples,
                         batch_sampler=sampler,
-                        collate_fn=samples.collate_fn)
+                        collate_fn=samples.collate_fn,
+                        num_workers=4,
+                        pin_memory=True)
 
     distance_fn=hf.cdist(cfg['metric'], cfg['metric_k'])
     centroid_fn=hf.mean(cfg['metric'], cfg['metric_k'])
@@ -106,5 +107,16 @@ if __name__ == "__main__":
     results = {'test_{}s{}w_mean'.format(SHOT, WAY) : m,
                'test_{}s{}w_std'.format(SHOT, WAY)  : pm}
     
+    if os.path.exists(os.path.join(DIR, 'results.json')):
+        print('Results file already exists. Appending to dictionary.')
+        with open(os.path.join(DIR, 'results.json')) as f:
+            results = json.load(f)
+        results['test_{}s{}w_mean'.format(SHOT, WAY)] = m
+        results['test_{}s{}w_std'.format(SHOT, WAY)]  = pm
+    else:
+        print('Results file does not exist. Creating dictionary.')
+        results = {'test_{}s{}w_mean'.format(SHOT, WAY) : m,
+                   'test_{}s{}w_std'.format(SHOT, WAY)  : pm}
+        
     with open(os.path.join(DIR, 'results.json'), 'w') as f:
         json.dump(results, f)
