@@ -1,9 +1,8 @@
 """
     voc.py
-    Oct 15 2022
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import torch
 from collections import Counter, OrderedDict
 
