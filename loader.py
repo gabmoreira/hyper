@@ -1,23 +1,22 @@
 """
     loader.py
-    Mar 2 2023
+    Mar 4 2023
     Gabriel Moreira
 """
 import os
 import math
 import torch
 import numpy as np
+from PIL import Image, ImageEnhance
 
-from PIL import Image
+from tqdm.auto import tqdm
+
 from torch.utils.data import Dataset
 from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as fn
 import torchvision.transforms as T
 
 from voc import Vocabulary
-from PIL import ImageEnhance
-
-from tqdm.auto import tqdm
 
 from typing import List
 
@@ -29,9 +28,13 @@ transformtypedict = dict(Brightness=ImageEnhance.Brightness,
     
 class ImageJitter(object):
     def __init__(self, transformdict):
+        """
+        """
         self.transforms = [(transformtypedict[k], transformdict[k]) for k in transformdict]
 
     def __call__(self, img):
+        """
+        """
         out = img
         randtensor = torch.rand(len(self.transforms))
 
@@ -41,7 +44,9 @@ class ImageJitter(object):
         return out
     
     
-def get_cub_transforms(split: str = None, size=84):
+def get_cub_transforms(split: str=None, size: int=84):
+    """
+    """
     t_train = T.Compose([T.RandomResizedCrop(size),
                          ImageJitter(dict(Brightness=0.4, Contrast=0.4, Color=0.4)),
                          T.RandomHorizontalFlip(),
@@ -62,7 +67,9 @@ def get_cub_transforms(split: str = None, size=84):
     
     
     
-def get_df_transforms(split: str, size=224):
+def get_df_transforms(split: str, size: int=224):
+    """
+    """
     t_train = T.Compose([T.RandomResizedCrop(size, scale=(0.2, 1.)),
                          T.RandomHorizontalFlip(),
                          T.RandomApply([T.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
@@ -133,6 +140,9 @@ class ImSamples(Dataset):
 
         
     def build_target(self, target_name: str, items: list):
+        """
+            Creates whatever the target may be (e.g. concatenation of labels in data dict)
+        """
         n = len(self.data[items[0]])
         self.data[target_name] = ['/'.join([str(self.data[t][i]) for t in items]) for i in range(n)]
            
