@@ -1,9 +1,8 @@
 """
     train.py
-    Mar 3 2023
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -16,18 +15,16 @@ from utils import *
 from sampler import *
 
 
-if __name__ == '__main__':
-    torch.multiprocessing.set_start_method('spawn')
-    
-    device = "cuda:1" if torch.cuda.is_available() else "cpu"
-    if device == "cuda:1":
+if __name__ == '__main__':    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda":
         torch.cuda.empty_cache()
             
-    cfg = {'dataset'          : 'MINI_IMAGENET',
-           'img_path'         : './MINI_IMAGENET/',
-           'train_dict_path'  : './MINI_IMAGENET/train_split.pt',
-           'val_dict_path'    : './MINI_IMAGENET/val_split.pt',
-           'test_dict_path'   : './MINI_IMAGENET/test_split.pt',
+    cfg = {'dataset'          : 'CUB_200_2011',
+           'img_path'         : './CUB_200_2011/',
+           'train_dict_path'  : './CUB_200_2011/train_split.pt',
+           'val_dict_path'    : './CUB_200_2011/val_split.pt',
+           'test_dict_path'   : './CUB_200_2011/test_split.pt',
            'im_padding'       : True,
            'seed'             : 10,
            'epochs'           : 200,
@@ -37,7 +34,7 @@ if __name__ == '__main__':
            'gamma'            : 0.8,
            'step_size'        : 40,
            'riemannian'       : False,
-           'train_way'        : 30,
+           'train_way'        : 5,
            'train_shot'       : 1,
            'train_query'      : 15,
            'val_way'          : 5,
@@ -46,10 +43,10 @@ if __name__ == '__main__':
            'backbone'         : 'convnet',
            'manifold'         : 'spherical',
            'manifold_dim'     : 1024,
-           'manifold_k'       : 0.001,
+           'manifold_k'       : 0.003,
            'metric'           : 'euclidean',
            'metric_k'         : 0.0,
-           'n'                : 1}
+           'n'                : '2'}
 
     init_experiment(cfg)
     
@@ -68,7 +65,9 @@ if __name__ == '__main__':
         
     train_loader = DataLoader(train_samples,
                               batch_sampler=train_sampler,
-                              collate_fn=train_samples.collate_fn)
+                              collate_fn=train_samples.collate_fn,
+                              pin_memory=True,
+                              num_workers=4)
 
     val_samples = ImSamples(img_path=cfg['img_path'],
                             data_dict_path=cfg['val_dict_path'],
@@ -85,7 +84,9 @@ if __name__ == '__main__':
     
     val_loader = DataLoader(val_samples,
                             batch_sampler=val_sampler,
-                            collate_fn=val_samples.collate_fn)
+                            collate_fn=val_samples.collate_fn,
+                            pin_memory=True,
+                            num_workers=4)
     
     model = manifold_encoder(cfg['backbone'],
                              cfg['manifold'],
