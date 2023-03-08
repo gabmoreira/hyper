@@ -59,7 +59,7 @@ class Trainer:
         for epoch in range(self.start_epoch, self.epochs+1):
             train_loss, train_acc = self.train_epoch(epoch)
             
-            if epoch == 1 or epoch % 1 == 0:
+            if epoch == 1 or epoch % 5 == 0:
                 val_loss, val_acc = self.validate_epoch()
                 self.epoch_verbose(epoch, train_loss, train_acc, val_loss, val_acc)
                 
