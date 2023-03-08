@@ -69,8 +69,8 @@ if __name__ == "__main__":
     loader = DataLoader(samples,
                         batch_sampler=sampler,
                         collate_fn=samples.collate_fn,
-                        num_workers=4,
-                        pin_memory=True)
+                        num_workers=0,
+                        pin_memory=False)
 
     distance_fn=hf.cdist(cfg['metric'], cfg['metric_k'])
     centroid_fn=hf.mean(cfg['metric'], cfg['metric_k'])
