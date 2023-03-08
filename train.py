@@ -20,33 +20,33 @@ if __name__ == '__main__':
     if device == "cuda":
         torch.cuda.empty_cache()
             
-    cfg = {'dataset'          : 'CUB_200_2011',
-           'img_path'         : './CUB_200_2011/',
-           'train_dict_path'  : './CUB_200_2011/train_split.pt',
-           'val_dict_path'    : './CUB_200_2011/val_split.pt',
-           'test_dict_path'   : './CUB_200_2011/test_split.pt',
-           'im_padding'       : True,
-           'seed'             : 10,
+    cfg = {'dataset'          : 'MINI_IMAGENET',
+           'img_path'         : './MINI_IMAGENET/',
+           'train_dict_path'  : './MINI_IMAGENET/train_split.pt',
+           'val_dict_path'    : './MINI_IMAGENET/val_split.pt',
+           'test_dict_path'   : './MINI_IMAGENET/test_split.pt',
+           'im_padding'       : False,
+           'seed'             : 0,
            'epochs'           : 200,
            'resume'           : False,
            'batch_size'       : 100,
-           'lr'               : 1e-3,
+           'lr'               : 5e-3,
            'gamma'            : 0.8,
-           'step_size'        : 40,
+           'step_size'        : 60,
            'riemannian'       : False,
-           'train_way'        : 5,
-           'train_shot'       : 1,
+           'train_way'        : 20,
+           'train_shot'       : 5,
            'train_query'      : 15,
            'val_way'          : 5,
-           'val_shot'         : 1,
+           'val_shot'         : 5,
            'val_query'        : 15,
            'backbone'         : 'convnet',
            'manifold'         : 'spherical',
-           'manifold_dim'     : 1024,
-           'manifold_k'       : 0.003,
-           'metric'           : 'euclidean',
-           'metric_k'         : 0.0,
-           'n'                : '2'}
+           'manifold_dim'     : 1600,
+           'manifold_k'       : 0.00501,
+           'metric'           : 'poincare',
+           'metric_k'         : -0.005,
+           'n'                : '0'}
 
     init_experiment(cfg)
     
@@ -66,8 +66,8 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_samples,
                               batch_sampler=train_sampler,
                               collate_fn=train_samples.collate_fn,
-                              pin_memory=True,
-                              num_workers=4)
+                              pin_memory=False,
+                              num_workers=0)
 
     val_samples = ImSamples(img_path=cfg['img_path'],
                             data_dict_path=cfg['val_dict_path'],
@@ -85,8 +85,8 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_samples,
                             batch_sampler=val_sampler,
                             collate_fn=val_samples.collate_fn,
-                            pin_memory=True,
-                            num_workers=4)
+                            pin_memory=False,
+                            num_workers=0)
     
     model = manifold_encoder(cfg['backbone'],
                              cfg['manifold'],
