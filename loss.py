@@ -1,9 +1,8 @@
 """
-    train.py
-    Oct 13 2022
+    loss.py
+    Mar 4 2023
     Gabriel Moreira
 """
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,7 +16,7 @@ class ProtoLoss(nn.Module):
                  query: int,
                  distance_fn: Callable,
                  centroid_fn: Callable,
-                 device='cuda'):
+                 device: str='cuda'):
         
         super(ProtoLoss, self).__init__()
         self.shot  = shot
