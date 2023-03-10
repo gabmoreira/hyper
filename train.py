@@ -16,8 +16,8 @@ from sampler import *
 
 
 if __name__ == '__main__':    
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cuda":
+    device = "cuda:1" if torch.cuda.is_available() else "cpu"
+    if device == "cuda:1":
         torch.cuda.empty_cache()
             
     cfg = {'dataset'          : 'MINI_IMAGENET',
@@ -34,7 +34,7 @@ if __name__ == '__main__':
            'gamma'            : 0.8,
            'step_size'        : 60,
            'riemannian'       : False,
-           'train_way'        : 20,
+           'train_way'        : 30,
            'train_shot'       : 5,
            'train_query'      : 15,
            'val_way'          : 5,
@@ -42,10 +42,10 @@ if __name__ == '__main__':
            'val_query'        : 15,
            'backbone'         : 'convnet',
            'manifold'         : 'spherical',
-           'manifold_dim'     : 1600,
-           'manifold_k'       : 0.00501,
-           'metric'           : 'poincare',
-           'metric_k'         : -0.005,
+           'manifold_dim'     : 1024,
+           'manifold_k'       : 0.007,
+           'metric'           : 'euclidean',
+           'metric_k'         : 0.0,
            'n'                : '0'}
 
     init_experiment(cfg)
