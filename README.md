@@ -1,7 +1,7 @@
 # Training 
 Create an experiments folder in the parent directory of ./code/
 
-    `mkdir ./experiments/
+    mkdir ./experiments/
 
 Edit the cfg dictionary in train.py according to the desired specifications
 Move to the parent directory and run the train.py script
