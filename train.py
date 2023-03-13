@@ -16,8 +16,8 @@ from sampler import *
 
 
 if __name__ == '__main__':    
-    device = "cuda:1" if torch.cuda.is_available() else "cpu"
-    if device == "cuda:1":
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda":
         torch.cuda.empty_cache()
             
     cfg = {'dataset'          : 'MINI_IMAGENET',
@@ -41,9 +41,9 @@ if __name__ == '__main__':
            'val_shot'         : 5,
            'val_query'        : 15,
            'backbone'         : 'convnet',
-           'manifold'         : 'spherical',
+           'manifold'         : 'euclidean',
            'manifold_dim'     : 1024,
-           'manifold_k'       : 0.007,
+           'manifold_k'       : 0.0,
            'metric'           : 'euclidean',
            'metric_k'         : 0.0,
            'n'                : '0'}
