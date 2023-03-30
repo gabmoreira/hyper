@@ -50,7 +50,7 @@ def poincare_dist(x: torch.Tensor, y: torch.Tensor, k: float, keepdim: bool = Fa
     """
     sqrt_k = (-k) ** 0.5
     dist = atanh(sqrt_k * mobius_add(-x, y, k).norm(dim=-1, p=2, keepdim=keepdim))
-    return dist_c * 2 / sqrt_c
+    return dist * 2 / sqrt_k
 
 
 def lorentz_distance(x: torch.Tensor, y: torch.Tensor, k: float, keepdim: bool = False):
@@ -183,6 +183,11 @@ def lorentz_inclusion(x: torch.Tensor, k: float):
     z  = torch.sqrt(torch.clamp(norm_x**2 - (1.0/k), min=0.0))
     xz = torch.cat((x,z), 1)
     return xz
+
+
+
+def effective_radius(k: float, eps: float):
+    return (1.0 - eps) / ((-k) ** 0.5)
 
 
 def project2poincare(x: torch.Tensor, k: float, eps: float=1e-3):
