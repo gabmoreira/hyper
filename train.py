@@ -14,6 +14,7 @@ from trainer import Trainer
 from utils import *
 from sampler import *
 
+import hyperbolic.functional as hf
 
 if __name__ == '__main__':    
     device = "cuda" if torch.cuda.is_available() else "cpu"
