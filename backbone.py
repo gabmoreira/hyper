@@ -6,7 +6,6 @@
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 from torchvision.models import resnet50, ResNet50_Weights
 
@@ -35,8 +34,6 @@ class Resnet50(nn.Module):
     
     
 def conv_block(in_dim: int, out_dim: int):
-    """
-    """
     return nn.Sequential(nn.Conv2d(in_dim, out_dim, 3, padding=1),
                          nn.BatchNorm2d(out_dim),
                          nn.ReLU(),
