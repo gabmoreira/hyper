@@ -65,7 +65,7 @@ class Trainer:
                 
             # Check if better than previous models
             if epoch > 1:
-                is_best = self.tracker.isLarger('val_acc', val_acc)
+                is_best = self.tracker.is_larger('val_acc', val_acc)
             else:
                 is_best = True
 
