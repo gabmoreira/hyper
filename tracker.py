@@ -13,7 +13,10 @@ import seaborn as sns
 from typing import List
 
 class Tracker:
-    def __init__(self, metrics: List[str], filename: str, load=False):
+    def __init__(self,
+                 metrics: List[str],
+                 filename: str,
+                 load: bool=False):
         '''
         '''
         self.filename = os.path.join(filename, 'tracker.csv')
@@ -36,14 +39,14 @@ class Tracker:
         self.save()
 
 
-    def isLarger(self, metric: str, value: float):
+    def is_larger(self, metric: str, value: float):
         '''
         '''
         assert(metric in self.metrics_dict.keys())
         return sorted(self.metrics_dict[metric])[-1] < value
 
 
-    def isSmaller(self, metric: str, value: float):
+    def is_smaller(self, metric: str, value: float):
         '''
         '''
         assert(metric in self.metrics_dict.keys())
