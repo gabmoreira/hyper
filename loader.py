@@ -8,89 +8,13 @@ import math
 import torch
 import numpy as np
 from PIL import Image, ImageEnhance
-
 from tqdm.auto import tqdm
-
 from torch.utils.data import Dataset
-from torchvision.transforms import InterpolationMode
-import torchvision.transforms.functional as fn
-import torchvision.transforms as T
+from typing import List
 
 from voc import Vocabulary
 
-from typing import List
 
-transformtypedict = dict(Brightness=ImageEnhance.Brightness,
-                         Contrast=ImageEnhance.Contrast,
-                         Sharpness=ImageEnhance.Sharpness,
-                         Color=ImageEnhance.Color)
-
-    
-class ImageJitter(object):
-    def __init__(self, transformdict):
-        """
-        """
-        self.transforms = [(transformtypedict[k], transformdict[k]) for k in transformdict]
-
-    def __call__(self, img):
-        """
-        """
-        out = img
-        randtensor = torch.rand(len(self.transforms))
-
-        for i, (transformer, alpha) in enumerate(self.transforms):
-            r = alpha * (randtensor[i] * 2.0 - 1.0) + 1
-            out = transformer(out).enhance(r).convert("RGB")
-        return out
-    
-    
-def get_cub_transforms(split: str=None, size: int=84):
-    """
-    """
-    t_train = T.Compose([T.RandomResizedCrop(size),
-                         ImageJitter(dict(Brightness=0.4, Contrast=0.4, Color=0.4)),
-                         T.RandomHorizontalFlip(),
-                         T.ToTensor(),
-                         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-        
-    t_val = T.Compose([T.Resize(size, interpolation=T.InterpolationMode.BICUBIC),
-                       T.CenterCrop(size),
-                       T.ToTensor(),
-                       T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
-    if split == 'train':
-        return t_train
-    elif split == 'test' or split == 'val':
-        return t_val
-    else:
-        return t_train, t_val
-    
-    
-    
-def get_df_transforms(split: str, size: int=224):
-    """
-    """
-    t_train = T.Compose([T.RandomResizedCrop(size, scale=(0.2, 1.)),
-                         T.RandomHorizontalFlip(),
-                         T.RandomApply([T.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
-                         T.RandomGrayscale(p=0.2),
-                         T.ToTensor(),
-                         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-    
-    t_val = T.Compose([T.Resize(size, interpolation=T.InterpolationMode.BICUBIC),
-                       T.ToTensor(),
-                       T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
-    if split == 'train':
-        return t_train
-    elif split == 'test' or split == 'val':
-        return t_val
-    else:
-        return t_train, t_val
-
-
-
-    
     
 class ImSamples(Dataset):
     def __init__(self,
