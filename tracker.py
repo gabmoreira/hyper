@@ -43,14 +43,20 @@ class Tracker:
         '''
         '''
         assert(metric in self.metrics_dict.keys())
-        return sorted(self.metrics_dict[metric])[-1] < value
+        if len(self.metrics_dict[metric]) > 0:
+            return sorted(self.metrics_dict[metric])[-1] < value
+        else:
+            return True
 
 
     def is_smaller(self, metric: str, value: float):
         '''
         '''
         assert(metric in self.metrics_dict.keys())
-        return sorted(self.metrics_dict[metric])[0] > value
+        if len(self.metrics_dict[metric]) > 0:
+            return sorted(self.metrics_dict[metric])[0] > value
+        else:
+            return True
 
 
     def save(self):
