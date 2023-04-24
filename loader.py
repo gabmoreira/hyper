@@ -95,16 +95,17 @@ def get_df_transforms(split: str, size: int=224):
 class ImSamples(Dataset):
     def __init__(self,
                  img_path: str,
-                 data_dict_path: str,
-                 im_padding: bool,
-                 target: List[str],
-                 preload: bool,
-                 transforms):
+                 transforms,
+                 data_dict_path: str=None,
+                 im_padding: bool=False,
+                 target: List[str]=None,
+                 preload: bool=False):
  
         self.img_path   = img_path
         self.transforms = transforms
         self.im_padding = im_padding
         self.preload    = preload
+        self.target     = target
         
         """
             Reads dict with all data from data_dict_path
@@ -115,16 +116,20 @@ class ImSamples(Dataset):
                 dict['class']      = ['159.Black_and_white_Warbler', ... ]
                 dict['bbox']       = [[50, 40, 140, 180], [10, 55, 78, 180], ...]
         """
-        data_dict = torch.load(data_dict_path)
-        
-        self.data = {}
-        for key, value in data_dict.items():
-            self.data[key] = value
+        if data_dict_path is not None:
+            self.data = {}
+            data_dict = torch.load(data_dict_path)
+            for key, value in data_dict.items():
+                self.data[key] = value
+        else:
+            files = os.listdir(os.path.join(self.img_path, 'images'))
+            self.data = {'path' : ['images/' + f for f in files]}
             
-        self.build_target('target', target)
-        self.build_vocs(['target'])
+        if target is not None:
+            self.build_target('target', target)
+            self.build_vocs(['target'])
         
-        self.length = len(self.data['target'])
+        self.length = len(self.data['path'])
         
         if self.preload:
             self.load()
@@ -141,7 +146,7 @@ class ImSamples(Dataset):
         
     def build_target(self, target_name: str, items: list):
         """
-            Creates whatever the target may be (e.g. concatenation of labels in data dict)
+            Creates the classification target (e.g. concatenation of labels in data dict)
         """
         n = len(self.data[items[0]])
         self.data[target_name] = ['/'.join([str(self.data[t][i]) for t in items]) for i in range(n)]
@@ -149,12 +154,12 @@ class ImSamples(Dataset):
             
     def collate_fn(self, batch):
         """
-            Create batch tensors from argument batch (list)
+            Default collate_fn for classification
         """
         batch_dict = {}
-        batch_dict['data']   = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
-        batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
-        
+        batch_dict['data'] = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
+        if self.target is not None:
+            batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
         return batch_dict
         
         
@@ -162,19 +167,42 @@ class ImSamples(Dataset):
         """
             Load all the dataset into memory beforehand
         """
-        print('preloading option is True. Loading images to memory:')
+        print('preload option is True. Loading images to memory:')
         self.data['im'] = []
         
         for i in tqdm(range(self.length)):
             im = self.process_im(i)
             self.data['im'].append(im)
+          
+        
+    def process_im(self, i, min_bbox_width=100, min_bbox_height=100):
+        """
+            Open, crop (if bbox available), pad the i-th image
+        """
+        im = Image.open(os.path.join(self.img_path, self.data['path'][i]))
+        im = im.convert(mode='RGB')
+        
+        if 'bbox' in self.data.keys():
+            bbox = self.data['bbox'][i]
+            im   = im.crop(bbox)
+        
+        if self.im_padding:
+            im = self.pad_im(im)    
+    
+        return im
             
-            
+        
     def __getitem__(self, i):
         if self.preload:
-            return self.data['im'][i], self.data['target'][i]
+            if self.target is None:
+                return (self.data['im'][i],)
+            else:
+                return self.data['im'][i], self.data['target'][i]
         else:
-            return self.process_im(i), self.data['target'][i]
+            if self.target is None:
+                return (self.process_im(i),)
+            else:
+                return self.process_im(i), self.data['target'][i]               
     
     
     def __len__(self):
@@ -200,23 +228,6 @@ class ImSamples(Dataset):
         new_im = fn.pad(im, padding, fill=255) 
         
         return new_im
-    
-    
-    def process_im(self, i, min_bbox_width=100, min_bbox_height=100):
-        """
-            Open, crop (if bbox available), pad the i-th image
-        """
-        im = Image.open(os.path.join(self.img_path, self.data['path'][i]))
-        im = im.convert(mode='RGB')
-        
-        if 'bbox' in self.data.keys():
-            bbox = self.data['bbox'][i]
-            im   = im.crop(bbox)
-        
-        if self.im_padding:
-            im = self.pad_im(im)    
-    
-        return im
     
 
     def verbose(self):
