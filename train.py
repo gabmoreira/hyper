@@ -98,29 +98,30 @@ if __name__ == '__main__':
     model = model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=cfg['lr'])
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg['step_size'],
+    scheduler = optim.lr_scheduler.StepLR(optimizer,
+                                          step_size=cfg['step_size'],
                                           gamma=cfg['gamma'])
 
-    train_criterion = ProtoLoss(shot=cfg['train_shot'],
-                                way=cfg['train_way'],
-                                query=cfg['train_query'],
-                                distance_fn=hf.cdist(cfg['metric'], cfg['metric_k']),
-                                centroid_fn=hf.mean(cfg['metric'], cfg['metric_k']),
-                                device=device)
+    train_loss = ProtoLoss(shot=cfg['train_shot'],
+                           way=cfg['train_way'],
+                           query=cfg['train_query'],
+                           distance_fn=hf.cdist(cfg['metric'], cfg['metric_k']),
+                           centroid_fn=hf.mean(cfg['metric'], cfg['metric_k']),
+                           device=device)
     
-    val_criterion = ProtoLoss(shot=cfg['val_shot'],
-                              way=cfg['val_way'],
-                              query=cfg['val_query'],
-                              distance_fn=hf.cdist(cfg['metric'], cfg['metric_k']),
-                              centroid_fn=hf.mean(cfg['metric'], cfg['metric_k']),
-                              device=device)
+    val_loss = ProtoLoss(shot=cfg['val_shot'],
+                         way=cfg['val_way'],
+                         query=cfg['val_query'],
+                         distance_fn=hf.cdist(cfg['metric'], cfg['metric_k']),
+                         centroid_fn=hf.mean(cfg['metric'], cfg['metric_k']),
+                         device=device)
         
     trainer = Trainer(model,
                       cfg['epochs'],
                       optimizer,
                       scheduler,
-                      train_criterion,
-                      val_criterion,
+                      train_loss,
+                      val_loss,
                       train_loader, 
                       val_loader,
                       device,
