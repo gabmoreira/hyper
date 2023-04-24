@@ -19,25 +19,27 @@ class Trainer:
         epochs,
         optimizer,
         scheduler,
-        train_criterion,
-        val_criterion,
+        train_loss,
+        val_loss,
         train_loader,
         val_loader,
-        device,
-        name,
-        resume):
+        val_freq: int,
+        device: str,
+        name: str,
+        resume: bool):
 
-        self.model           = model
-        self.epochs          = epochs
-        self.optimizer       = optimizer
-        self.scheduler       = scheduler
-        self.train_criterion = train_criterion
-        self.val_criterion   = val_criterion
-        self.train_loader    = train_loader
-        self.val_loader      = val_loader
-        self.device          = device
-        self.name            = name
-        self.start_epoch     = 1
+        self.model        = model
+        self.epochs       = epochs
+        self.optimizer    = optimizer
+        self.scheduler    = scheduler
+        self.train_loss   = train_loss
+        self.val_loss     = val_loss
+        self.train_loader = train_loader
+        self.val_loader   = val_loader
+        self.val_freq     = val_freq
+        self.device       = device
+        self.name         = name
+        self.start_epoch  = 1
 
         self.tracker = Tracker(['epoch',
                                 'train_loss',
@@ -57,17 +59,15 @@ class Trainer:
         is_best = False
 
         for epoch in range(self.start_epoch, self.epochs+1):
-            train_loss, train_acc = self.train_epoch(epoch)
+            train_out = self.train_epoch(epoch)
             
-            if epoch == 1 or epoch % 5 == 0:
-                val_loss, val_acc = self.validate_epoch()
-                self.epoch_verbose(epoch, train_loss, train_acc, val_loss, val_acc)
+            if epoch % val_freq == 0:
+                val_out = self.validate_epoch()
+            
+            self.epoch_verbose(epoch, **train_out, **val_out)
                 
             # Check if better than previous models
-            if epoch > 1:
-                is_best = self.tracker.is_larger('val_acc', val_acc)
-            else:
-                is_best = True
+            is_best = self.tracker.is_larger('val_acc', val_acc)
 
             self.tracker.update(epoch=epoch,
                                 train_loss=train_loss,
@@ -81,9 +81,6 @@ class Trainer:
 
 
     def train_epoch(self, epoch):
-        """
-            Train model for ONE epoch
-        """
         self.model.train()
 
         batch_bar = tqdm(total=len(self.train_loader), dynamic_ncols=True, desc='Train') 
@@ -101,7 +98,7 @@ class Trainer:
             self.optimizer.zero_grad()
         
             batch_features = self.model(batch_data)
-            loss_batch     = self.train_criterion(batch_features, batch_target)  
+            loss_batch     = self.train_loss(batch_features, batch_target)  
             
             loss_batch.backward()
             self.optimizer.step()
@@ -109,7 +106,7 @@ class Trainer:
             total_loss_epoch += loss_batch.detach()
             avg_loss_epoch    = float(total_loss_epoch / (i_batch + 1))
             
-            tc, t = self.train_criterion.scores()
+            tc, t = self.train_loss.scores()
             total_correct += tc
             total += t
                 
@@ -121,7 +118,8 @@ class Trainer:
 
         batch_bar.close()
 
-        return float(avg_loss_epoch), float(total_correct/total)
+        return {'loss' : float(avg_loss_epoch), 'acc' : float(total_correct/total)}
+    
     
     @torch.no_grad()
     def validate_epoch(self):
@@ -135,7 +133,7 @@ class Trainer:
             batch_target = batch_dict['target'].to(self.device)
                 
             batch_features = self.model(batch_data)
-            loss_batch = self.val_criterion(batch_features, batch_target)  
+            loss_batch = self.val_loss(batch_features, batch_target)  
 
             total_loss += loss_batch.detach()
             
@@ -147,9 +145,6 @@ class Trainer:
 
 
     def save_checkpoint(self, epoch, is_best):
-        '''
-            Save model dict and hyperparams
-        '''
         checkpoint = {"epoch"     : epoch,
                       "model"     : self.model.state_dict(),
                       "optimizer" : self.optimizer,
@@ -168,24 +163,20 @@ class Trainer:
 
 
     def resume_checkpoint(self):
-        '''
-        '''
-        resume_path = os.path.join('./experiments/', self.name, "checkpoint.pt")
-        print("Loading checkpoint: {} ...".format(resume_path))
+        resume_path = os.path.join('./experiments/', self.name, 'checkpoint.pt')
+        print('Loading checkpoint: {} ...'.format(resume_path))
 
         checkpoint       = torch.load(resume_path)
-        self.start_epoch = checkpoint["epoch"] + 1
-        self.optimizer   = checkpoint["optimizer"]
-        self.scheduler   = checkpoint["scheduler"]
+        self.start_epoch = checkpoint['epoch'] + 1
+        self.optimizer   = checkpoint['optimizer']
+        self.scheduler   = checkpoint['scheduler']
         self.model.load_state_dict(checkpoint["model"])
         
-        print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
+        print('Checkpoint loaded. Resume training from epoch {}'.format(self.start_epoch))
 
     
-    def epoch_verbose(self, epoch, train_loss, train_acc, val_loss, val_acc):
+    def epoch_verbose(self, epoch, **kwargs):
         log = "\nEpoch: {}/{} summary:".format(epoch, self.epochs)
-        log += "\n            Train acc (%) |  {:.4f}".format(train_acc * 100)
-        log += "\n            Dev acc   (%) |  {:.4f}".format(val_acc * 100)
-        log += "\n            Train loss    |  {:1.6e}".format(train_loss)
-        log += "\n            Dev loss      |  {:1.6e}".format(val_loss)
+        for k, v in kwargs.items():
+            log += "\n            {}  |  {:1.6e}".format(k,v)
         print(log)
