@@ -24,6 +24,7 @@ class Trainer:
         train_loader,
         val_loader,
         val_freq: int,
+        best_on: str,
         device: str,
         name: str,
         resume: bool):
@@ -40,13 +41,9 @@ class Trainer:
         self.device       = device
         self.name         = name
         self.start_epoch  = 1
-
-        self.tracker = Tracker(['epoch',
-                                'train_loss',
-                                'train_acc', 
-                                'val_loss', 
-                                'val_acc',
-                                'lr'], os.path.join('./experiments', name), load=resume)
+        self.best_on      = best_on
+        
+        self.tracker = Tracker(os.path.join('./experiments', name), load=resume)
 
         if resume:
             self.resume_checkpoint()
@@ -67,58 +64,64 @@ class Trainer:
             self.epoch_verbose(epoch, **train_out, **val_out)
                 
             # Check if better than previous models
-            is_best = self.tracker.is_larger('val_acc', val_acc)
+            is_best = self.tracker.is_better(best_on, eval(best_on))
 
             self.tracker.update(epoch=epoch,
-                                train_loss=train_loss,
-                                train_acc=train_acc,
-                                val_loss=val_loss,
-                                val_acc=val_acc,
-                                lr=self.optimizer.param_groups[0]['lr'])
+                                lr=self.optimizer.param_groups[0]['lr'],
+                                **train_out,
+                                **val_out)
 
             self.scheduler.step()
             self.save_checkpoint(epoch, is_best)
-
+            
 
     def train_epoch(self, epoch):
         self.model.train()
-
         batch_bar = tqdm(total=len(self.train_loader), dynamic_ncols=True, desc='Train') 
 
-        total_loss_epoch = 0
-
-        avg_loss_epoch = float('inf')
-        total_correct  = 0
+        total_loss = 0.0
+        total_correct = 0
         total = 0
         
+        out = {}
         for i_batch, batch_dict in enumerate(self.train_loader):
-            batch_data   = batch_dict['data'].to(self.device)
-            batch_target = batch_dict['target'].to(self.device)
-            
             self.optimizer.zero_grad()
-        
+            batch_data = batch_dict['data'].to(self.device)
             batch_features = self.model(batch_data)
-            loss_batch     = self.train_loss(batch_features, batch_target)  
             
+            if 'target' in batch_dict:
+                batch_target = batch_dict['target'].to(self.device)
+                loss_batch = self.train_loss(batch_features, batch_target)
+                total_loss += loss_batch.detach() 
+                out['train_loss'] = float(total_loss / len(self.train_loader))
+
+                tc, t = self.train_loss.scores()
+                total_correct += tc
+                total += t
+                out['train_acc'] = float(total_correct / total)
+
+                batch_bar.set_postfix(
+                    loss="{:1.5e}".format(out['train_loss']),
+                    acc="{:.4f}".format(out['train_acc']),
+                    lr="{:1.2e}".format(float(self.optimizer.param_groups[0]['lr'])))
+                batch_bar.update()
+            
+            else:
+                loss_batch = self.train_loss(batch_features)
+                total_loss += loss_batch.detach() 
+                out['train_loss'] = float(total_loss / len(self.train_loader))
+
+                batch_bar.set_postfix(
+                    loss="{:1.5e}".format(out['train_loss']),
+                    lr="{:1.2e}".format(float(self.optimizer.param_groups[0]['lr'])))
+                batch_bar.update()
+                
             loss_batch.backward()
             self.optimizer.step()
 
-            total_loss_epoch += loss_batch.detach()
-            avg_loss_epoch    = float(total_loss_epoch / (i_batch + 1))
-            
-            tc, t = self.train_loss.scores()
-            total_correct += tc
-            total += t
-                
-            batch_bar.set_postfix(
-                loss="{:1.5e}".format(avg_loss_epoch),
-                acc="{:.4f}".format(total_correct / total),
-                lr="{:1.2e}".format(float(self.optimizer.param_groups[0]['lr'])))
-            batch_bar.update()
-
         batch_bar.close()
 
-        return {'loss' : float(avg_loss_epoch), 'acc' : float(total_correct/total)}
+        return out
     
     
     @torch.no_grad()
@@ -128,20 +131,25 @@ class Trainer:
         total_correct  = 0
         total = 0
         
+        out = {}
         for i_batch, batch_dict in enumerate(tqdm(self.val_loader)):
-            batch_data   = batch_dict['data'].to(self.device)  
-            batch_target = batch_dict['target'].to(self.device)
-                
+            batch_data = batch_dict['data'].to(self.device)  
             batch_features = self.model(batch_data)
-            loss_batch = self.val_loss(batch_features, batch_target)  
+            
+            if 'target' in batch_dict.keys():
+                batch_target = batch_dict['target'].to(self.device)
+                loss_batch = self.val_loss(batch_features, batch_target)
+                tc, t = self.val_loss.scores()
+                total_correct += tc
+                total += t
+                out['val_acc'] = float(total_correct / total)
+            else:
+                loss_batch = self.val_loss(batch_features)
 
             total_loss += loss_batch.detach()
             
-            tc, t = self.val_criterion.scores()
-            total_correct += tc
-            total += t
-                
-        return float(total_loss / i_batch), float(total_correct / total)
+        out['val_loss'] = float(total_loss / len(self.val_loader)),
+        return out
 
 
     def save_checkpoint(self, epoch, is_best):
