@@ -55,8 +55,6 @@ if __name__ == "__main__":
 
     samples = ImSamples(img_path=cfg['img_path'],
                         data_dict_path=cfg['test_dict_path'],
-                        transforms=get_cub_transforms(split='test'),
-                        im_padding=cfg['im_padding'],
                         target=['class'],
                         preload=True)
 
@@ -66,9 +64,11 @@ if __name__ == "__main__":
                              shot=SHOT,
                              query=QUERY)
 
+    transforms = get_cub_transforms('val', size=84, im_padding=cfg['im_padding'])
+
     loader = DataLoader(samples,
                         batch_sampler=sampler,
-                        collate_fn=samples.collate_fn,
+                        collate_fn=lambda batch: samples.collate_fn(batch, transforms),
                         num_workers=0,
                         pin_memory=False)
 
