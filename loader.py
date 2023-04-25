@@ -7,7 +7,7 @@ import os
 import math
 import torch
 import numpy as np
-from PIL import Image, ImageEnhance
+from PIL import Image
 from tqdm.auto import tqdm
 from torch.utils.data import Dataset
 from typing import List
@@ -19,15 +19,11 @@ from voc import Vocabulary
 class ImSamples(Dataset):
     def __init__(self,
                  img_path: str,
-                 transforms,
                  data_dict_path: str=None,
-                 im_padding: bool=False,
                  target: List[str]=None,
                  preload: bool=False):
  
         self.img_path   = img_path
-        self.transforms = transforms
-        self.im_padding = im_padding
         self.preload    = preload
         self.target     = target
         
@@ -76,12 +72,12 @@ class ImSamples(Dataset):
         self.data[target_name] = ['/'.join([str(self.data[t][i]) for t in items]) for i in range(n)]
            
             
-    def collate_fn(self, batch):
+    def collate_fn(self, batch, transforms):
         """
             Default collate_fn for classification
         """
         batch_dict = {}
-        batch_dict['data'] = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
+        batch_dict['data'] = torch.cat([transforms(b[0]).unsqueeze(0) for b in batch])
         if self.target is not None:
             batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
         return batch_dict
@@ -108,11 +104,7 @@ class ImSamples(Dataset):
         
         if 'bbox' in self.data.keys():
             bbox = self.data['bbox'][i]
-            im   = im.crop(bbox)
-        
-        if self.im_padding:
-            im = self.pad_im(im)    
-    
+            im   = im.crop(bbox)  
         return im
             
         
@@ -131,27 +123,6 @@ class ImSamples(Dataset):
     
     def __len__(self):
         return self.length
-    
-    
-    def pad_im(self, im):
-        """
-            Pads image to make it square
-            Keeps aspect ratio
-            Returns a PIL image
-        """
-        old_size = torch.tensor(im.size[::-1])
-        d = torch.argmax(old_size)
-        
-        new_size = old_size.max()
-
-        pad          = new_size - old_size[1-d]
-        padding      = [0,0,0,0]
-        padding[d]   = pad // 2
-        padding[d+2] = new_size - old_size[1-d] - padding[d]
-
-        new_im = fn.pad(im, padding, fill=255) 
-        
-        return new_im
     
 
     def verbose(self):
