@@ -16,11 +16,15 @@ def save_config(exp_name: str, cfg: dict):
         json.dump(cfg, fp)
      
     
-def init_experiment(cfg: dict):
-    # Generate name of the experiment
+def create_fewshot_exp_name(cfg):
     exp_name = cfg['dataset'] + '_'
     exp_name += cfg['manifold'] + str(cfg['manifold_dim']) + '_'
     exp_name += cfg['metric'] + '_' + str(cfg['train_shot']) + 's' + str(cfg['train_way']) + 'w_n' + str(cfg['n'])
+    return exp_name
+    
+    
+def init_experiment(cfg: dict, exp_name: str):
+    # Generate name of the experiment
     cfg['name'] = exp_name
     
     # If experiment folder doesn't exist create it
