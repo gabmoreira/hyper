@@ -31,23 +31,13 @@ def create_mlp(in_dim: int, mlp_dims: str):
     return nn.Sequential(*layers)
 
 
-class VICModel(nn.Module):
-    def __init__(self, backbone: nn.Module, projector: nn.Module):
-        super().__init__()
-        self.backbone  = backbone
-        self.projector = projector
-
-    def forward(self, x: torch.Tensor):
-        x = x.flatten(start_dim=0,end_dim=1)
-        x = self.projector(self.backbone(x))
-        
-        return x
     
-def manifold_encoder(backbone: str,
-                     manifold: str,
-                     dim: int,
-                     k: float,
-                     riemannian: bool):
+def create_manifold_encoder(backbone: str,
+                            manifold: str,
+                            dim: int,
+                            k: float,
+                            riemannian: bool,
+                            projector: str=None):
 
     if backbone == 'resnet50':
         conv = nn.Sequential(Resnet50(unfrozen_layers=['layer2', 
@@ -72,7 +62,10 @@ def manifold_encoder(backbone: str,
     elif manifold.lower() == 'euclidean':
         assert k == 0
         to_manifold = nn.Identity()
-                                               
-    model = nn.Sequential(conv, to_manifold)
+     
+    if projector is None:
+        model = nn.Sequential(conv, to_manifold)
+    else:
+        model = nn.Sequential(conv, create_mlp(projector), to_manifold)
                                            
     return model
