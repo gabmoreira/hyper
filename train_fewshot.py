@@ -27,7 +27,7 @@ if __name__ == '__main__':
            'train_dict_path'  : './MINI_IMAGENET/train_split.pt',
            'val_dict_path'    : './MINI_IMAGENET/val_split.pt',
            'test_dict_path'   : './MINI_IMAGENET/test_split.pt',
-           'im_padding'       : False,
+           'im_padding'       : True,
            'seed'             : 0,
            'epochs'           : 200,
            'resume'           : False,
@@ -50,13 +50,13 @@ if __name__ == '__main__':
            'metric_k'         : 0.0,
            'n'                : '0'}
 
-    init_experiment(cfg)
+    exp_name = create_fewshot_exp_name(cfg)
+    
+    init_experiment(cfg, exp_name)
     
     train_samples = ImSamples(img_path=cfg['img_path'],
                               data_dict_path=cfg['train_dict_path'],
-                              transforms=get_cub_transforms('train', size=84),
                               target=['class'],
-                              im_padding=cfg['im_padding'],
                               preload=True)
 
     train_sampler = FewshotSampler(dataset=train_samples, 
@@ -65,17 +65,17 @@ if __name__ == '__main__':
                                    shot=cfg['train_shot'],
                                    query=cfg['train_query'])
         
+    train_transforms = get_cub_transforms('train', size=84, im_padding=cfg['im_padding']),
+            
     train_loader = DataLoader(train_samples,
                               batch_sampler=train_sampler,
-                              collate_fn=train_samples.collate_fn,
+                              collate_fn=lambda batch: train_samples.collate_fn(batch, train_transforms)
                               pin_memory=False,
                               num_workers=0)
 
     val_samples = ImSamples(img_path=cfg['img_path'],
                             data_dict_path=cfg['val_dict_path'],
-                            transforms=get_cub_transforms('val', size=84),
                             target=['class'],
-                            im_padding=cfg['im_padding'],
                             preload=True)
 
     val_sampler = FewshotSampler(dataset=val_samples, 
@@ -84,17 +84,19 @@ if __name__ == '__main__':
                                  shot=cfg['val_shot'],
                                  query=cfg['val_query'])
     
+    val_transforms = get_cub_transforms('val', size=84, im_padding=cfg['im_padding'])
+    
     val_loader = DataLoader(val_samples,
                             batch_sampler=val_sampler,
-                            collate_fn=val_samples.collate_fn,
+                            collate_fn=lambda batch: val_samples.collate_fn(batch, val_transforms),
                             pin_memory=False,
                             num_workers=0)
     
-    model = manifold_encoder(cfg['backbone'],
-                             cfg['manifold'],
-                             cfg['manifold_dim'],
-                             cfg['manifold_k'],
-                             cfg['riemannian'])
+    model = create_manifold_encoder(cfg['backbone'],
+                                    cfg['manifold'],
+                                    cfg['manifold_dim'],
+                                    cfg['manifold_k'],
+                                    cfg['riemannian'])
     
     model = model.to(device)
 
