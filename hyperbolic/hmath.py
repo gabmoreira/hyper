@@ -38,7 +38,7 @@ def atanh(x):
 
 
 def asinh(x):
-    return Arsinh.apply(x)
+    return Asinh.apply(x)
 
 
 def acosh(x, clamp=1e-5):
