@@ -34,7 +34,7 @@ class Tracker:
         """
         if self.init:
             for metric, value in kwargs.items():
-                self.metrics_dict[metric].append(value)
+                self.metrics_dict[metric] = [value]
             self.init = False
         else:
             for metric, value in kwargs.items():
@@ -47,9 +47,12 @@ class Tracker:
     def is_larger(self, metric: str, value: float):
         """
         """
+        if self.init:
+            return True
+        
         assert metric in self.metrics_dict.keys(), 'unknown metric'
         if len(self.metrics_dict[metric]) > 0:
-            return max(self.metrics_dict[metric]) < value
+            return max(self.metrics_dict[metric]) <= value
         else:
             return True
 
@@ -57,9 +60,12 @@ class Tracker:
     def is_smaller(self, metric: str, value: float):
         """
         """
+        if self.init:
+            return True
+        
         assert metric in self.metrics_dict.keys(), 'unknown metric'
         if len(self.metrics_dict[metric]) > 0:
-            return min(self.metrics_dict[metric]) > value
+            return min(self.metrics_dict[metric]) >= value
         else:
             return True
 
@@ -67,6 +73,9 @@ class Tracker:
     def is_better(self, metric: str, value: float):
         """
         """
+        if self.init:
+            return True
+        
         assert(metric in self.metrics_dict.keys())
         if len(self.metrics_dict[metric]) > 0:
             if metric == 'val_acc':
