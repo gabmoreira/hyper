@@ -7,7 +7,20 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .hmath import atanh, acosh, tanh, cosh, sinh
+from .hmath import atanh, acosh, tanh, cosh, sinh, asinh
+
+
+
+def hyperbolic_softmax(X, A, P, k):
+    # Conformal factor
+    lambda_pkc = 2 / (1 + k * P.pow(2).sum(dim=1))
+    kk = lambda_pkc * torch.norm(A, dim=1) / torch.sqrt(abs(k))
+    mob_add = mobius_addition_batch(-P, X, k)
+    num = 2 * torch.sqrt(abs(k)) * torch.sum(mob_add * A.unsqueeze(1), dim=-1)
+    denom = torch.norm(A, dim=1, keepdim=True) * (1 + k * mob_add.pow(2).sum(dim=2))
+    logit = kk.unsqueeze(1) * asinh(num / denom)
+    return logit.permute(1, 0)
+
 
 
 """
@@ -138,19 +151,17 @@ def poincare2lorentz(x : torch.Tensor, k: float):
     return y
 
 
-def poincare_exp0(uu : torch.Tensor, k : float):
+def poincare_exp0(u : torch.Tensor, k : float, clip: float=None):
     """
         Poincaré (curvature k < 0) exponential map @ 0
-
-    norm = torch.clamp_min(u.norm(dim=-1, keepdim=True, p=2), 1e-5)
-    maxnorm = 5.80
-    cond = norm > maxnorm
-    projected = u / norm * maxnorm
-    uu = torch.where(cond, projected, u)
     """
     sqrt_k = (-k) ** 0.5
-    u_norm = torch.clamp_min(uu.norm(dim=-1, p=2, keepdim=True), 1e-5)
-    gamma  = tanh(sqrt_k * u_norm) * uu / (sqrt_k * u_norm)
+
+    if clip is not None:
+        u = torch.min(torch.ones_like(u), clip / u.norm(dim=-1, p=2, keepdim=True)) * u
+
+    u_norm = torch.clamp_min(u.norm(dim=-1, p=2, keepdim=True), 1e-5)
+    gamma  = tanh(sqrt_k * u_norm) * u / (sqrt_k * u_norm)
     return gamma
 
 
@@ -352,4 +363,6 @@ def euclidean_mean(x : torch.Tensor, k : float):
 
 
 def mean(manifold: str, k: float):
+    if manifold == 'squared_euclidean':
+        return eval('lambda x : ' + 'euclidean' + '_mean(x,' + str(k) + ')')
     return eval('lambda x : ' + manifold + '_mean(x,' + str(k) + ')')
