@@ -21,12 +21,14 @@ class ImSamples(Dataset):
                  img_path: str,
                  data_dict_path: str=None,
                  target: List[str]=None,
-                 preload: bool=False):
+                 preload: bool=False,
+                 transforms = None):
  
         self.img_path   = img_path
         self.preload    = preload
         self.target     = target
-        
+        self.transforms = transforms
+
         """
             Reads dict with all data from data_dict_path
 
@@ -72,12 +74,13 @@ class ImSamples(Dataset):
         self.data[target_name] = ['/'.join([str(self.data[t][i]) for t in items]) for i in range(n)]
            
             
-    def collate_fn(self, batch, transforms):
+    def collate_fn(self, batch):
         """
             Default collate_fn for classification
         """
         batch_dict = {}
-        batch_dict['data'] = torch.cat([transforms(b[0]).unsqueeze(0) for b in batch])
+
+        batch_dict['data'] = torch.cat([self.transforms(b[0]).unsqueeze(0) for b in batch])
         if self.target is not None:
             batch_dict['target'] = torch.tensor([self.voc['target'].w2i(b[1]) for b in batch])
         return batch_dict
@@ -95,9 +98,9 @@ class ImSamples(Dataset):
             self.data['im'].append(im)
           
         
-    def process_im(self, i, min_bbox_width=100, min_bbox_height=100):
+    def process_im(self, i):
         """
-            Open, crop (if bbox available), pad the i-th image
+            Open, crop (if bbox available)
         """
         im = Image.open(os.path.join(self.img_path, self.data['path'][i]))
         im = im.convert(mode='RGB')
