@@ -4,7 +4,6 @@
     Gabriel Moreira
 """
 import sys
-sys.path.append('./hyper')
 
 import os
 import json
@@ -21,9 +20,11 @@ from loader import *
 from utils  import *
 from loss import *
 from sampler import *
+from impro import *
 import hyperbolic.functional as hf
 
-device = "cuda:1" if torch.cuda.is_available() else "cpu"
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
 torch.cuda.empty_cache()
 
 if __name__ == "__main__":
@@ -43,47 +44,47 @@ if __name__ == "__main__":
     with open(os.path.join(DIR, 'cfg.json')) as f:
         cfg = json.load(f)
 
-    model = manifold_encoder(cfg['backbone'],
-                             cfg['manifold'],
-                             cfg['manifold_dim'],
-                             cfg['manifold_k'],
-                             cfg['riemannian']).to(device)
+    model = create_manifold_encoder(cfg['backbone'],
+                                    cfg['manifold'],
+                                    cfg['manifold_dim'],
+                                    cfg['manifold_k'],
+                                    cfg['riemannian'],
+                                    cfg['clip'] if 'clip' in cfg.keys() else None)
 
     model.load_state_dict(torch.load(os.path.join(DIR, 'best_weights.pt'),
                                      map_location=device))
     model.eval()
-
+    model = model.to(device)
+    
     samples = ImSamples(img_path=cfg['img_path'],
                         data_dict_path=cfg['test_dict_path'],
                         target=['class'],
-                        preload=True)
+                        transforms=get_cub_transforms('test', size=84))
 
-    sampler = FewshotSampler(dataset=samples, 
+    sampler = FewshotSampler(targets=samples.data['target'], 
                              num_batches=10000,
                              way=WAY,
                              shot=SHOT,
                              query=QUERY)
-
-    transforms = get_cub_transforms('val', size=84, im_padding=cfg['im_padding'])
-
+        
     loader = DataLoader(samples,
                         batch_sampler=sampler,
-                        collate_fn=lambda batch: samples.collate_fn(batch, transforms),
-                        num_workers=0,
-                        pin_memory=False)
+                        collate_fn=samples.collate_fn,
+                        pin_memory=True,
+                        num_workers=8)
 
     distance_fn=hf.cdist(cfg['metric'], cfg['metric_k'])
     centroid_fn=hf.mean(cfg['metric'], cfg['metric_k'])
 
     criterion = ProtoLoss(shot=SHOT,
-                          way=WAY,
-                          query=QUERY,
-                          distance_fn=distance_fn,
-                          centroid_fn=centroid_fn,
-                          device=device)
+                        way=WAY,
+                        query=QUERY,
+                        distance_fn=distance_fn,
+                        centroid_fn=centroid_fn,
+                        device=device)
 
-    # Run test
     test_acc_record = np.zeros((10000,))
+
     num_correct = 0
     num_trials  = 0
     with torch.no_grad():
@@ -100,8 +101,7 @@ if __name__ == "__main__":
     m   = np.mean(test_acc_record)
     std = np.std(test_acc_record)
     pm  = 1.96 * (std / np.sqrt(len(test_acc_record)))
-    pprint.pprint(cfg)
-    pprint.pprint("Test accuracy {:.4f} +- {:.4f}".format(m, pm))
+    print("Test accuracy {:.4f} +- {:.4f}".format(m, pm))
     
     # Store results
     results = {'test_{}s{}w_mean'.format(SHOT, WAY) : m,
