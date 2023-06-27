@@ -9,7 +9,7 @@ import numpy as np
 
 class FewshotSampler:
     def __init__(self, 
-                 dataset,
+                 targets,
                  num_batches: int, 
                  way: int,
                  shot: int,
@@ -21,7 +21,7 @@ class FewshotSampler:
         self.query = query
         self.samples_per_class = shot + query
 
-        self.classes = np.array(dataset.data['target'])
+        self.classes = np.array(targets)
         self.unique_classes = np.unique(self.classes)
         self.num_classes = len(self.unique_classes)
         
