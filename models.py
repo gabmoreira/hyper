@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import hyperbolic.nn as hnn
 import hyperbolic.functional as hf
 
-from backbone import Resnet50, Convnet
+from backbone import Convnet
                         
 
 def create_mlp(in_dim: int, mlp_dims: str):
@@ -37,19 +37,14 @@ def create_manifold_encoder(backbone: str,
                             dim: int,
                             k: float,
                             riemannian: bool,
-                            projector: str=None):
-
-    if backbone == 'resnet50':
-        conv = nn.Sequential(Resnet50(unfrozen_layers=['layer2', 
-                                                       'layer3',
-                                                       'layer4']),
-                             nn.Linear(2048, dim))                                    
-    elif backbone == 'convnet':
+                            clip: float=None):
+                      
+    if backbone == 'convnet':
         conv = Convnet(out_dim=dim)
                               
     if manifold.lower() == 'poincare':
         assert k < 0
-        to_manifold = hnn.PoincareExp0(k, riemannian)
+        to_manifold = hnn.PoincareExp0(k, riemannian, clip)
         
     if manifold.lower() == 'lorentz':
         assert k < 0
@@ -63,9 +58,6 @@ def create_manifold_encoder(backbone: str,
         assert k == 0
         to_manifold = nn.Identity()
      
-    if projector is None:
-        model = nn.Sequential(conv, to_manifold)
-    else:
-        model = nn.Sequential(conv, create_mlp(projector), to_manifold)
-                                           
+    model = nn.Sequential(conv, to_manifold)
+                               
     return model
