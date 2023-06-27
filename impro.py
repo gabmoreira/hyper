@@ -4,15 +4,38 @@
     Gabriel Moreira
 """
 import numpy as np
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+import torch
 from torchvision.transforms import InterpolationMode
 import torchvision.transforms.functional as fn
 import torchvision.transforms as T
+import matplotlib.pyplot as plt
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+
 
 transformtypedict = dict(Brightness=ImageEnhance.Brightness,
                          Contrast=ImageEnhance.Contrast,
                          Sharpness=ImageEnhance.Sharpness,
                          Color=ImageEnhance.Color)
+
+
+def imshow(tensor: torch.Tensor, i: int=None, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        
+    if tensor.ndim == 3:
+        if tensor.shape[0] == 3:
+            im = tensor.permute(1,2,0)
+            ax.imshow((im-im.min())/(im.max()-im.min()))
+        elif tensor.shape[-1] == 3:
+            ax.imshow((tensor-tensor.min())/(tensor.max()-tensor.min()))
+    else:
+        if tensor.shape[1] == 3:
+            im = tensor[i,...].permute(1,2,0)
+            ax.imshow((im-im.min())/(im.max()-im.min()))
+        elif tensor.shape[-1] == 3:
+            ax.imshow((tensor[i,...]-tensor[i,...].min())/(tensor[i,...].max()-tensor[i,...].min()))    
+
 
 
 class SquarePadding(object):
@@ -30,7 +53,7 @@ class SquarePadding(object):
         
         new_size = old_size.max()
 
-        pad          = new_size - old_size[1-d]
+        pad          = int(new_size - old_size[1-d])
         padding      = [0,0,0,0]
         padding[d]   = pad // 2
         padding[d+2] = new_size - old_size[1-d] - padding[d]
