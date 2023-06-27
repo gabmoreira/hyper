@@ -90,7 +90,7 @@ class ProtoLoss(nn.Module):
         logits = -self.distance_fn(x_query, x_prototypes)
         loss = F.cross_entropy(logits, self.label)
     
-        self.tc = (torch.argmax(logits, dim=-1) == self.label).sum()
+        self.tc = (torch.argmax(logits, dim=-1) == self.label).sum().detach().cpu().item()
         self.t  = logits.shape[0]
         
         return loss
