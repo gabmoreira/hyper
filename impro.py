@@ -84,46 +84,6 @@ class Solarization(object):
             return ImageOps.solarize(img)
         else:
             return img
-
-class VICTransform(object):
-    def __init__(self, size: int):
-        self.transform = T.Compose(
-            [
-                T.RandomResizedCrop(size, interpolation=T.InterpolationMode.BICUBIC),
-                T.RandomHorizontalFlip(p=0.5),
-                T.RandomApply([T.ColorJitter(brightness=0.4,
-                                             contrast=0.4,
-                                             saturation=0.2,
-                                             hue=0.1)], p=0.8),
-                T.RandomGrayscale(p=0.2),
-                GaussianBlur(p=1.0),
-                Solarization(p=0.0),
-                T.ToTensor(),
-                T.Normalize(mean=[0.485, 0.456, 0.406],
-                            std=[0.229, 0.224, 0.225]),
-            ]
-        )
-        self.transform_prime = T.Compose(
-            [
-                T.RandomResizedCrop(size, interpolation=T.InterpolationMode.BICUBIC),
-                T.RandomHorizontalFlip(p=0.5),
-                T.RandomApply([T.ColorJitter(brightness=0.4,
-                                             contrast=0.4,
-                                             saturation=0.2,
-                                             hue=0.1)], p=0.8),
-                T.RandomGrayscale(p=0.2),
-                GaussianBlur(p=0.1),
-                Solarization(p=0.2),
-                T.ToTensor(),
-                T.Normalize(mean=[0.485, 0.456, 0.406],
-                            std=[0.229, 0.224, 0.225]),
-            ]
-        )
-
-    def __call__(self, sample):
-        x1 = self.transform(sample)
-        x2 = self.transform_prime(sample)
-        return x1, x2
     
     
 class ImageJitter(object):
