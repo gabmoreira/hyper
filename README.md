@@ -18,3 +18,6 @@ The tracker CSV with train and validation accuracies and losses is saved as ./ex
 For testing a trained model simply provide the experiment name and the shot/way/query regime you want to test it on 
 
     python ./code/test.py ./experiments/<experiment_name> <shot> <way> <query>
+    
+# References
+G Moreira, M Marques, JP Costeira, and A Hauptmann. "Hyperbolic vs Euclidean Embeddings in Few-Shot Learning: Two Sides of the Same Coin." WACV 2024 (To appear) [arXiv:2309.10013](https://arxiv.org/pdf/2309.10013.pdf).
