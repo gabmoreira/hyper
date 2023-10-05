@@ -8,50 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from typing import Callable
-
-
-class VICLoss(nn.Module):
-    def __init__(self,
-                 manifold_dim: int,
-                 sim_coef: float,
-                 std_coef: float,
-                 cov_coef: float):
-        super().__init__()
-        self.manifold_dim = manifold_dim
-        self.sim_coef = sim_coef
-        self.std_coef = std_coef
-        self.cov_coef = cov_coef
-        
-    def forward(self,
-                x: torch.Tensor,
-                target: torch.Tensor=None):
-        x = x.view(-1, 2, self.manifold_dim)
-
-        x1 = x[:,0,...]
-        x2 = x[:,1,...]
-
-        repr_loss = F.mse_loss(x1, x2)
-        
-        x1 = x1 - x1.mean(dim=0)
-        x2 = x2 - x2.mean(dim=0)
-        std_x1 = torch.sqrt(x1.var(dim=0) + 0.0001)
-        std_x2 = torch.sqrt(x2.var(dim=0) + 0.0001)
-        
-        std_loss = torch.mean(F.relu(1 - std_x1)) / 2 + torch.mean(F.relu(1 - std_x2)) / 2
-
-        cov_x1 = (x1.T @ x1) / (x1.shape[0] - 1)
-        cov_x2 = (x2.T @ x2) / (x2.shape[0] - 1)
-        
-        n = cov_x1.shape[0]
-        
-        cov_loss_x1 = cov_x1.flatten()[:-1].view(n-1, n+1)[:, 1:].flatten().pow_(2).sum().div(self.manifold_dim)
-        cov_loss_x2 = cov_x2.flatten()[:-1].view(n-1, n+1)[:, 1:].flatten().pow_(2).sum().div(self.manifold_dim)
-
-        loss = self.sim_coef * repr_loss
-        loss += self.std_coef * std_loss
-        loss += self.cov_coef * (cov_loss_x1 + cov_loss_x2)
-        
-        return loss
     
     
 class ProtoLoss(nn.Module):
